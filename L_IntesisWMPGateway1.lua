@@ -61,6 +61,8 @@ local _PLUGIN_NAME = "IntesisWMPGateway"
 local _PLUGIN_VERSION = "1.0"
 local _CONFIGVERSION = 010000
 
+local debugMode = false
+
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
 local MYTYPE = "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1"
 
@@ -97,8 +99,6 @@ local lastPing = 0
 
 local runStamp = {}
 local sysTemps = { unit="C", default=20, minimum=16, maximum=32 } 
-
-local debugMode = true
 
 local isALTUI = false
 local isOpenLuup = false
