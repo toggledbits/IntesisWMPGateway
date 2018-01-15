@@ -282,7 +282,7 @@ local function sendCommand( cmdString, pdev )
     lastCommand = cmdString
     local cmd = cmdString .. INTESIS_EOL
     if ( luup.io.write( cmd ) ~= true ) then
-        L("Can't transmit, communication error")
+        L("Can't transmit, communication error while attempting to send %1", cmdString)
         luup.set_failure( 1, pdev )
         return false
     end
