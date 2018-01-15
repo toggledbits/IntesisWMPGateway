@@ -8,7 +8,7 @@
         <deviceType>urn:schemas-toggledbits-com:device:IntesisWMPGateway:1</deviceType>
         <staticJson>D_IntesisWMPGateway1_C.json</staticJson>
         <friendlyName>Intesis WMP Interface</friendlyName>
-        <manufacturer>rigpapa</manufacturer>
+        <manufacturer>Patrick H. Rigney (rigpapa)</manufacturer>
         <manufacturerURL>http://www.toggledbits.com/intesis/</manufacturerURL>
         <modelDescription></modelDescription>
         <modelName>Intesis WMP Interface</modelName>
