@@ -5,17 +5,17 @@
 -- This file is available under GPL 3.0. See LICENSE in documentation for info.
 -- -----------------------------------------------------------------------------
 
---[[ 
+--[[
     Overview
     --------------------------------------------------------------------------------------------
     This is the core implementation for the WMP protocol inferface. The interface plugin emul-
     ates a thermostat by providing the operating mode, fan mode, setpoint mode, and temperature
     sensor services common to those devices, and a UI with typical thermostat controls.
-    
+
     As presented, the Intesis WMP protocol provides a basic set of functions for controlling an
     autochangeover (dual heating and cooling) thermostat. The interface maintains a single temp-
     erature setpoint, rather than separate heating and cooling setpoints.
-    
+
     The Intesis interface provides control messages only. At this time, WMP appears to be a one-
     way dialog with the controlled heating/cooling unit in that it does not itself directly
     communicate with the unit, so cannot retrieve and thus does not pass back any status infor-
@@ -28,7 +28,7 @@
     "Target" and "Status" modes together. Since there is no way to know that setting a "Target"
     mode is achieved by the unit, we force the "Status" together where a target is set, and are
     simply assuming that our command has been successfully carried out from end to end.
-    
+
     WMP also does not seem to offer any protocol commands or data that reflect the current state
     of the unit. For example. one can set the operating mode to "cooling," and WMP can (as stated
     above) confirm that it has requested the unit change its operating mode to cooling, but can-
@@ -37,9 +37,9 @@
     as state simply follows target and the information is thus redundant. Similarly, no other
     status information about the unit is available, such as fan status, filter change needed,
     etc.
-    
+
     Another challenge in producing a "clean" implementation is that the WMP LIMITS command re-
-    turns, among other data, the setpoint limits that the configured unit is capable of handling, 
+    turns, among other data, the setpoint limits that the configured unit is capable of handling,
     but does not return the resolution. That is, WMP will tell us the device will accept setpoint
     temperatures in the range of 18 to 30 C, for example, but will not tell us that temps must be
     set in whole degrees, half degrees, or tenths of degrees (the maximum resolution of the WMP
@@ -50,9 +50,9 @@
     interface controls (ALTUI, however, provides this ability easily). Although the author can-
     not confirm with the equipment on hand whether Intesis actually keeps resolution data in its
     unit configurations, it certainly seems reasonable that it would, and thus not terribly
-    challenging for Intesis to extend the protocol to include an addition LIMITS response for 
+    challenging for Intesis to extend the protocol to include an addition LIMITS response for
     this purpose.
-   
+
 --]]
 
 module("L_IntesisWMPGateway1", package.seeall)
@@ -98,7 +98,7 @@ local lastRefresh = 0
 local lastPing = 0
 
 local runStamp = {}
-local sysTemps = { unit="C", default=20, minimum=16, maximum=32 } 
+local sysTemps = { unit="C", default=20, minimum=16, maximum=32 }
 
 local isALTUI = false
 local isOpenLuup = false
@@ -167,7 +167,7 @@ local function dump(t)
         elseif type(v) == "number" then
             local d = v - os.time()
             if d < 0 then d = -d end
-            if d <= 86400 then 
+            if d <= 86400 then
                 val = string.format("%d (%s)", v, os.date("%X", v))
             else
                 val = tostring(v)
@@ -200,7 +200,7 @@ local function L(msg, ...)
             elseif type(val) == "number" then
                 local d = val - os.time()
                 if d < 0 then d = -d end
-                if d <= 86400 then 
+                if d <= 86400 then
                     val = string.format("%d (time %s)", val, os.date("%X", val))
                 end
             end
@@ -330,25 +330,25 @@ local function handleCHN( unit, segs, pdev )
             L("Invalid ONOFF state from device %1 in %2", args[2], msg)
         end
     elseif args[1] == "MODE" then
-        if args[2] == nil then 
+        if args[2] == nil then
             L("Malformed CHN segment %2 function data missing in %3", args[1], msg)
             return
         end
         -- Store this for use by others, just to have available
         luup.variable_set( MYSID, "IntesisMODE", args[2], pdev )
-        
+
         --[[ Now map the Intesis mode into what the service allows. We track this into two
              variables: the usual ModeStatus for the service, and our own LastMode. In the
-             service, "Off" is one of the possible states, where it's separate in Intesis. 
+             service, "Off" is one of the possible states, where it's separate in Intesis.
              So we only change the service status if we're actually ON. Otherwise, we just
              save it in LastMode, and getting it back into ModeStatus happens later when
              the device is turned back on (see above).
-             
+
              Note that there doesn't seem to be a guaranteed order for when ONOFF and MODE
              appear, and it seems unlikely it would ever be desirable to assume it. This
              mechanism should work regardless of the order in which these messages arrive.
         --]]
-        
+
         local xmap = { ["COOL"]=MODE_COOL, ["HEAT"]=MODE_HEAT, ["AUTO"]=MODE_AUTO }
         if xmap[args[2]] == nil then
             if args[2] == "FAN" then
@@ -452,17 +452,17 @@ function handlePONG( unit, segs, pdev )
 end
 
 local ResponseDispatch = {
-    ID=handleID, 
-    INFO=handleINFO, 
-    CHN=handleCHN, 
-    LIMITS=handleLIMITS, 
-    ACK=handleACK, 
-    ERR=handleERR, 
-    PONG=handlePONG, 
+    ID=handleID,
+    INFO=handleINFO,
+    CHN=handleCHN,
+    LIMITS=handleLIMITS,
+    ACK=handleACK,
+    ERR=handleERR,
+    PONG=handlePONG,
     CLOSE=handleCLOSE
 }
 
--- Handle the message just received. 
+-- Handle the message just received.
 local function handleMessage( msg, pdev )
     D("handleMessage(%1)", msg)
     local mm, nSeg
@@ -471,7 +471,7 @@ local function handleMessage( msg, pdev )
         L("malformed response from unit, insufficient segments: %1", msg)
         return
     end
-    
+
     -- The first segment contains the response type, for which many have a unit number (comma-separated from type)
     local resp = split( segs[1], "," ) or { "<UNDEFINED>" }
     local respType = string.upper( resp[1] or "" )
@@ -488,7 +488,7 @@ end
 
 --[[ OUT
 
--- Update the display status. We don't really bother with this at the moment because the WMP 
+-- Update the display status. We don't really bother with this at the moment because the WMP
 -- protocol doesn't tell us the running status of the unit (see comments at top of this file).
 local function updateDisplayStatus( dev )
     luup.variable_set( MYSID, "", modeStatus, dev )
@@ -564,7 +564,7 @@ end
 function actionSetCurrentFanSpeed( dev, newSpeed )
     D("actionSetCurrentFanSpeed(%1,%2)", dev, newSpeed)
     newSpeed = tonumber( newSpeed, 10 ) or 0
-    if newSpeed == 0 then 
+    if newSpeed == 0 then
         return actionSetFanMode( dev, FANMODE_AUTO )
     end
     newSpeed = constrain( newSpeed, 1, nil ) -- ??? high limit
@@ -592,7 +592,7 @@ function actionSetCurrentSetpoint( dev, newSP )
     newSP = tonumber(newSP, 10)
     if newSP == nil then return end
     newSP = constrain( newSP, sysTemps.minimum, sysTemps.maximum )
-    
+
     -- Convert to C if needed
     if sysTemps.unit == "F" then
         newSP = FtoC( newSP )
@@ -624,7 +624,7 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
         debugMode = true
         return
     end
-    
+
     local target = tonumber(lul_parameters['devnum']) or luup.device
     local n
     local html = string.format("lul_request=%q\n", lul_request)
@@ -668,7 +668,7 @@ local function plugin_runOnce(dev)
         luup.variable_set(MYSID, "PingInterval", DEFAULT_PING, dev)
         luup.variable_set(MYSID, "RefreshInterval", DEFAULT_REFRESH, dev)
         luup.variable_set(MYSID, "ConfigurationUnits", "C", dev)
-        
+
         luup.variable_set(OPMODE_SID, "ModeTarget", MODE_OFF, dev)
         luup.variable_set(OPMODE_SID, "ModeStatus", MODE_OFF, dev)
         luup.variable_set(OPMODE_SID, "EnergyModeTarget", EMODE_NORMAL, dev)
@@ -685,14 +685,14 @@ local function plugin_runOnce(dev)
         else
             luup.variable_set(SETPOINT_SID, "CurrentSetpoint", "64", dev)
         end
-        
+
         luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
         return
     end
-    
+
 --[[ Future config revisions should compare the current revision number and apply
      changes incrementally. The code below is an example of how to handle.
-     
+
     if rev < 010100 then
         D("runOnce() updating config for rev 010100")
         -- Future. This code fragment is provided to demonstrate method.
@@ -700,7 +700,7 @@ local function plugin_runOnce(dev)
         -- Go one version at a time (that is, one condition block for each version number change).
     end
 --]]
-    
+
     -- No matter what happens above, if our versions don't match, force that here/now.
     if (rev ~= _CONFIGVERSION) then
         luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
@@ -719,17 +719,17 @@ end
 
 function plugin_tick(targ)
     local pdev, stepStamp, passthru
-    stepStamp,pdev,passthru = string.match( targ, "(%d+):(%d+):.*" ) 
+    stepStamp,pdev,passthru = string.match( targ, "(%d+):(%d+):.*" )
     D("plugin_tick(%1) stepStamp %2, pdev %3, passthru %4", targ, stepStamp, pdev, passthru)
     pdev = tonumber( pdev, 10 )
     assert( pdev ~= nil and luup.devices[pdev] )
     stepStamp = tonumber( stepStamp, 10 )
-    if stepStamp ~= runStamp[pdev] then 
+    if stepStamp ~= runStamp[pdev] then
         D("plugin_tick() got stepStamp %1, expected %2, another thread running, so exiting...", stepStamp, runStamp[pdev])
         return
     end
 
-    -- Refresh or ping due? 
+    -- Refresh or ping due?
     local now = os.time()
     local intPing = getVarNumeric( "PingInterval", DEFAULT_PING, pdev )
     local intRefresh = getVarNumeric( "RefreshInterval", DEFAULT_REFRESH, pdev )
@@ -742,7 +742,7 @@ function plugin_tick(targ)
         if not sendCommand("PING", pdev) then return end
         lastPing = now
     end
-    
+
     -- When do we tick next?
     local nextPing = lastPing + intPing
     local nextRefresh = lastRefresh + intRefresh
@@ -761,7 +761,7 @@ end
 function plugin_handleIncoming( pdev, iData )
     local ch = string.byte(iData)
     lastIncoming = os.time() -- or socket milliseconds? Not sure we need that much accuracy...
-    
+
     if ch == 13 or ch == 10 then
         -- End of line
         if inBuffer ~= nil then
@@ -781,7 +781,7 @@ end
 function plugin_init(dev)
     D("plugin_init(%1)", dev)
     L("starting version %1 for device %2 WMP device IP %3", _PLUGIN_VERSION, dev, luup.attr_get( "ip", dev ) or "NOT SET" )
-    
+
     -- Check for ALTUI and OpenLuup
     local k,v
     for k,v in pairs(luup.devices) do
@@ -789,8 +789,8 @@ function plugin_init(dev)
             local rc,rs,jj,ra
             D("init() detected ALTUI at %1", k)
             isALTUI = true
-            rc,rs,jj,ra = luup.call_action("urn:upnp-org:serviceId:altui1", "RegisterPlugin", 
-                { newDeviceType=MYTYPE, newScriptFile="J_IntesisWMPGateway1_ALTUI.js", newDeviceDrawFunc="IntesisWMPGateway_ALTUI.DeviceDraw" }, 
+            rc,rs,jj,ra = luup.call_action("urn:upnp-org:serviceId:altui1", "RegisterPlugin",
+                { newDeviceType=MYTYPE, newScriptFile="J_IntesisWMPGateway1_ALTUI.js", newDeviceDrawFunc="IntesisWMPGateway_ALTUI.DeviceDraw" },
                 k )
             D("init() ALTUI's RegisterPlugin action returned resultCode=%1, resultString=%2, job=%3, returnArguments=%4", rc,rs,jj,ra)
         elseif v.device_type == "openLuup" then
@@ -809,7 +809,7 @@ function plugin_init(dev)
 
     -- See if we need any one-time inits
     plugin_runOnce(dev)
-    
+
     -- Connected?
     local ip = luup.attr_get( "ip", dev ) or ""
     if ip == "" then
@@ -820,7 +820,7 @@ function plugin_init(dev)
         luup.variable_set( MYSID, "DisplayTemperature", "Comm error", dev )
         return false, "WMP device " .. ip .. " not connected", _PLUGIN_NAME
     end
-    
+
     -- Other inits
     runStamp[dev] = os.time()
     inBuffer = nil
@@ -828,18 +828,18 @@ function plugin_init(dev)
     lastCommand = nil
     lastRefresh = 0
     lastPing = 0
-    
+
     --[[ Work out the system units, the user's desired display units, and the configuration units.
          The user's desire overrides the system configuration. This is an exception provided in
          case the user has a thermostat for which they want to operate in units other than the
          system configuration. If the target units and the config units don't comport, modify
-         the interface configuration to use the target units and reload Luup. 
+         the interface configuration to use the target units and reload Luup.
     --]]
     local sysUnits = luup.attr_get("TemperatureFormat", 0) or "C"
     local forceUnits = luup.variable_get( MYSID, "ForceUnits", dev ) or ""
     local cfUnits = luup.variable_get( MYSID, "ConfigurationUnits", dev ) or ""
-	local targetUnits = sysUnits
-	if forceUnits ~= "" then targetUnits = forceUnits end
+    local targetUnits = sysUnits
+    if forceUnits ~= "" then targetUnits = forceUnits end
     D("plugin_init() system units %1, configured units %2, target units %3.", sysUnits, cfUnits, targetUnits)
     if cfUnits ~= targetUnits then
         -- Reset configuration for temperature units configured.
@@ -848,21 +848,21 @@ function plugin_init(dev)
         luup.variable_set( MYSID, "ConfigurationUnits", targetUnits, dev )
         luup.reload()
     end
-    if targetUnits == "C" then    
+    if targetUnits == "C" then
         sysTemps = { unit="C", default=21, minimum=16, maximum=32 }
     else
         sysTemps = { unit="F", default=70, minimum=60, maximum=90 }
     end
 
 --[[ OUT -- See comments at top
-    
+
     -- A few things we care to look at.
     -- luup.variable_watch( "intesisVarChanged", SETPOINT_SID, "CurrentSetpoint", dev )
     luup.variable_watch( "intesisVarChanged", OPMODE_SID, "ModeStatus", dev )
     luup.variable_watch( "intesisVarChanged", FANMODE_SID, "Mode", dev )
     luup.variable_watch( "intesisVarChanged", FANMODE_SID, "FanStatus", dev )
 --]]
-    
+
     -- Log in? --
 
     -- Send some initial requests for data...
@@ -871,10 +871,10 @@ function plugin_init(dev)
         luup.set_failure( 1, dev  )
         return false, "Device communication failure", _PLUGIN_NAME
     end
-    
+
     -- Schedule our first tick.
     plugin_scheduleTick( 15, runStamp[dev], dev, "PHR" )
-    
+
     L("Running!")
     luup.set_failure( 0, dev )
     return true, "OK", _PLUGIN_NAME
