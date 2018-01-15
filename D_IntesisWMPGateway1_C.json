@@ -1,7 +1,7 @@
 {
-	"default_icon": "http://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
+	"default_icon": "https://www.toggledbits.com/intesis/assets/wmp_mode_off.png",
 	"state_icons": [{
-			"img": "http://www.toggledbits.com/intesis/assets/wmp_mode_heating.png",
+			"img": "https://www.toggledbits.com/intesis/assets/wmp_mode_heat.png",
 			"conditions": [{
 				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
 				"variable": "ModeStatus",
@@ -11,7 +11,7 @@
 			}]
 		},
 		{
-			"img": "http://www.toggledbits.com/intesis/assets/wmp_mode_cooling.png",
+			"img": "https://www.toggledbits.com/intesis/assets/wmp_mode_cool.png",
 			"conditions": [{
 				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
 				"variable": "ModeStatus",
@@ -21,12 +21,12 @@
 			}]
 		},
 		{
-			"img": "http://www.toggledbits.com/intesis/assets/wmp_mode_off.png",
+			"img": "https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
 			"conditions": [{
 				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
 				"variable": "ModeStatus",
 				"operator": "==",
-				"value": "Off",
+				"value": "AutoChangeOver",
 				"subcategory_num": 0
 			}]
 		}

@@ -61,6 +61,8 @@ local _PLUGIN_NAME = "IntesisWMPGateway"
 local _PLUGIN_VERSION = "1.0"
 local _CONFIGVERSION = 010000
 
+local debugMode = false
+
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
 local MYTYPE = "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1"
 
@@ -97,8 +99,6 @@ local lastPing = 0
 
 local runStamp = {}
 local sysTemps = { unit="C", default=20, minimum=16, maximum=32 } 
-
-local debugMode = true
 
 local isALTUI = false
 local isOpenLuup = false
@@ -282,7 +282,7 @@ local function sendCommand( cmdString, pdev )
     lastCommand = cmdString
     local cmd = cmdString .. INTESIS_EOL
     if ( luup.io.write( cmd ) ~= true ) then
-        L("Can't transmit, communication error")
+        L("Can't transmit, communication error while attempting to send %1", cmdString)
         luup.set_failure( 1, pdev )
         return false
     end
@@ -836,12 +836,14 @@ function plugin_init(dev)
          the interface configuration to use the target units and reload Luup. 
     --]]
     local sysUnits = luup.attr_get("TemperatureFormat", 0) or "C"
-    local targetUnits = luup.variable_get( MYSID, "ForceUnits", dev ) or sysUnits
+    local forceUnits = luup.variable_get( MYSID, "ForceUnits", dev ) or ""
     local cfUnits = luup.variable_get( MYSID, "ConfigurationUnits", dev ) or ""
-    L("System units %1, configured units %2, target units %3.", sysUnits, cfUnits, targetUnits)
+	local targetUnits = sysUnits
+	if forceUnits ~= "" then targetUnits = forceUnits end
+    D("plugin_init() system units %1, configured units %2, target units %3.", sysUnits, cfUnits, targetUnits)
     if cfUnits ~= targetUnits then
         -- Reset configuration for temperature units configured.
-        L("Reconfiguring instance for %1, which will require a Luup restart.", targetUnits)
+        L("Reconfiguring from %2 to %1, which will require a Luup restart.", targetUnits, cfUnits)
         luup.attr_set( "device_json", "D_IntesisWMPGateway1_" .. targetUnits .. ".json", dev )
         luup.variable_set( MYSID, "ConfigurationUnits", targetUnits, dev )
         luup.reload()
