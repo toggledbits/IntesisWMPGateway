@@ -384,7 +384,7 @@
 					"left": "0",
 					"Label": {
 						"lang_tag": "intesiswmp_about",
-						"text": "Intesis WMP Plug-in &copy; 2017 Patrick H. Rigney, All Rights Reserved. <a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+						"text": "Intesis WMP Plug-in v1.0-beta &copy; 2017 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
 					},
 					"Display": {
 						"Top": 180,

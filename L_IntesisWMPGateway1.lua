@@ -58,10 +58,10 @@
 module("L_IntesisWMPGateway1", package.seeall)
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "1.0"
+local _PLUGIN_VERSION = "1.0-beta"
 local _CONFIGVERSION = 010000
 
-local debugMode = false
+local debugMode = true
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
 local MYTYPE = "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1"
