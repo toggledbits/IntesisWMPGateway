@@ -836,12 +836,14 @@ function plugin_init(dev)
          the interface configuration to use the target units and reload Luup. 
     --]]
     local sysUnits = luup.attr_get("TemperatureFormat", 0) or "C"
-    local targetUnits = luup.variable_get( MYSID, "ForceUnits", dev ) or sysUnits
+    local forceUnits = luup.variable_get( MYSID, "ForceUnits", dev ) or ""
     local cfUnits = luup.variable_get( MYSID, "ConfigurationUnits", dev ) or ""
-    L("System units %1, configured units %2, target units %3.", sysUnits, cfUnits, targetUnits)
+	local targetUnits = sysUnits
+	if forceUnits ~= "" then targetUnits = forceUnits end
+    D("plugin_init() system units %1, configured units %2, target units %3.", sysUnits, cfUnits, targetUnits)
     if cfUnits ~= targetUnits then
         -- Reset configuration for temperature units configured.
-        L("Reconfiguring instance for %1, which will require a Luup restart.", targetUnits)
+        L("Reconfiguring from %2 to %1, which will require a Luup restart.", targetUnits, cfUnits)
         luup.attr_set( "device_json", "D_IntesisWMPGateway1_" .. targetUnits .. ".json", dev )
         luup.variable_set( MYSID, "ConfigurationUnits", targetUnits, dev )
         luup.reload()
