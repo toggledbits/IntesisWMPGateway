@@ -10,7 +10,7 @@ IntesisWMPGateway has not yet been tested on openLuup with AltUI, but is expecte
 
 IntesisWMPGateway is written and supported by Patrick Rigney, aka rigpapa on the [Vera forums](http://http://forum.micasaverde.com/).
 
-For more information on Intesis WMP Gateways, [visit the Intesis site](http:). For more information on Vera home automation controllers,
+For more information on Intesis WMP Gateways, [visit the Intesis site](https://www.intesishome.com/). For more information on Vera home automation controllers,
 [Vera Ltd's site](http://getvera.com/).
 
 ## Installation ##
@@ -72,6 +72,49 @@ controls are the same, but the expanded control display includes buttons for fan
 **NOTE:** Since the Intesis WMP devices are gateways for a large number of heating/cooling units by various manufacturers, the capabilities
 of each device vary considerably. For many devices, the UI buttons will have no effect; in some cases, the buttons may affect one unit differently
 from the way they affect another. This is not a defect of the plug-in, it is a limitation in the use of a generic gateway with a specific device.
+
+## Actions ##
+
+Intesis WMP Gateway implements the following actions under the `urn:toggledbits-com:serviceId:IntesisWMPGateway1` service:
+
+### SetName/GetName ###
+
+The `SetName` action may be used to change the name of the gateway. The name of the gateway itself changes, but this does not change
+the name of the Vera device. Use Vera's UI tools for that. When using `SetName`, the new name must be passed in a parameter named
+`NewName` (capitalization exactly as shown). The `GetName` action returns the current name of the gateway device in an argument
+named `Name`.
+
+### FanSpeedUp/FanSpeedDown ###
+
+The `FanSpeedUp` and `FanSpeedDown` actions adjust the fan speed up or down, respectively, within the limits of the gateway and
+the configured heating/cooling unit. These actions take no parameters.
+
+### SetCurrentFanSpeed/GetCurrentFanSpeed ###
+
+The `SetCurrentFanSpeed` action takes a single parameter, `NewCurrentFanSpeed`, which sets the fan speed at the gateway. The new
+fan speed is expected to be an integer in the range the gateway and heating/cooling unit can accept. If out of range, the value
+may be clamped at the limits. Passing an empty value or 0 will cause the fan speed mode to be set to "Auto" if the gateway supports
+it for the configured heating/cooling unit.
+
+The `GetCurrentFanSpeed` action returns a single argument, `CurrentFanSpeed`, with the gateway's last-reported fan speed (an integer
+or "Auto").
+
+### GetSignalStrength ###
+
+The `GetSignalStrength` action returns a single argument (`SignalDB`) containing the WiFi signal strength reported by the gateway. 
+This is usually a negative integer (&lt; -96 is a bad/unacceptable signal; -86 to -95 is weak; -85 to -81 is good; -80 to -71 is very
+good; and anything &gt;= -70 is excellent).
+
+### Other Services ###
+
+In addition to the above actions, the Intesis WMP Gateway plug-in implements the following "standard" actions for thermostats:
+
+* `urn:upnp-org:serviceId:HVAC_UserOperatingMode1`: `SetModeTarget`, `GetModeTarget`, `GetModeStatus`
+* `urn:upnp-org:serviceId:HVAC_FanOperatingMode1`: `SetMode`, `GetMode`
+* `urn:upnp-org:serviceId:TemperatureSetpoint1`: `SetCurrentSetpoint`, `GetCurrentSetpoint`
+
+The plug-in also provides many of the state variables behind these services. In addition, the plug-in maintains the `CurrentTemperature` 
+state variable of the `urn:upnp-org:serviceId:TemperatureSensor1` service (current ambient temperature as reported by the gateway).
 
 ## Advanced Configuration ##
 
