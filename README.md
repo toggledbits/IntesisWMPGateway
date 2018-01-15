@@ -95,6 +95,9 @@ units are changed, the plug-in will self-reconfigure. If the user has some reaso
 over than the Vera's configured unit, setting `ForceUnits` to "C" or "F" will cause the plug-in to display Fahrenheit or Celsius, 
 respectively.
 
+Note that this variable is not automatically created with the device. You will need to create it using the "Create Service" tab in the
+device's Advanced settings page. The service name is (copy-paste recommended) `urn:toggledbits-com:serviceId:IntesisWMPGateway1`.
+
 ## Reporting Bugs/Enhancement Requests ##
 
 Bug reports and enhancement requests are welcome! Please use the ["Issues" section](https://github.com/toggledbits/IntesisWMPGateway/issues) of the Github repository to open a new bug report or make an enhancement request.
