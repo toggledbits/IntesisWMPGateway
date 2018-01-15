@@ -92,7 +92,7 @@ the configured heating/cooling unit. These actions take no parameters.
 ### SetCurrentFanSpeed/GetCurrentFanSpeed ###
 
 The `SetCurrentFanSpeed` action takes a single parameter, `NewCurrentFanSpeed`, which sets the fan speed at the gateway. The new
-fan speed is expected to be an integer in the range the gateway and heating/cooling unit can accept. If out of range, the value
+fan speed is expected to be an integer in the range the gateway and heating/cooling unit can accept (e.g. 1 to 5). If out of range, the value
 may be clamped at the limits. Passing an empty value or 0 will cause the fan speed mode to be set to "Auto" if the gateway supports
 it for the configured heating/cooling unit.
 
@@ -109,8 +109,8 @@ good; and anything &gt;= -70 is excellent).
 
 In addition to the above actions, the Intesis WMP Gateway plug-in implements the following "standard" actions for thermostats:
 
-* `urn:upnp-org:serviceId:HVAC_UserOperatingMode1`: `SetModeTarget`, `GetModeTarget`, `GetModeStatus`
-* `urn:upnp-org:serviceId:HVAC_FanOperatingMode1`: `SetMode`, `GetMode`
+* `urn:upnp-org:serviceId:HVAC_UserOperatingMode1`: `SetModeTarget` (Off, AutoChangeOver, HeatOn, CoolOn), `GetModeTarget`, `GetModeStatus`
+* `urn:upnp-org:serviceId:HVAC_FanOperatingMode1`: `SetMode` (Auto, ContinuousOn), `GetMode`
 * `urn:upnp-org:serviceId:TemperatureSetpoint1`: `SetCurrentSetpoint`, `GetCurrentSetpoint`
 
 The plug-in also provides many of the state variables behind these services. In addition, the plug-in maintains the `CurrentTemperature` 
