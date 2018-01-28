@@ -60,18 +60,17 @@ The plug-in should being communicating with the gateway.
 ## Operation ##
 
 As it appears in the Vera dashboard, the IntesisWMPGateway plug-in presents a fairly typical thermostat interface in the Vera UI. 
-Buttons labeled "Off", "Heat", "Cool", and "Auto" 
-are used to change the heating/cooling unit's operating mode. The "slider" control (which doesn't look like a slider in UI7, it has the "+"
-and "-" buttons) is used to change the setpoint temperature. To the right of the slider is the current temperature as reported by the
-gateway.
+Buttons labeled "Off", "Heat", "Cool", "Auto", "Dry" and "Fan" 
+are used to change the heating/cooling unit's operating mode. The "spinner" control (up/down arrows) is used to change the setpoint temperature. 
+To the right of the spinner is the current temperature as reported by the gateway.
 
-If you click the device arrow and click into the "Control" tab, a slightly expanded control UI is presented. The operating mode and setpoint
-controls are the same, but the expanded control display includes buttons for fan mode/speed control. Pressing the "Auto" button under the
-"Fan" heading will set the fan mode to automatic. Pressing the buttons with up and down arrows changes the fan's fixed speed.
+If you click the arrow in the device panel you land on the "Control" tab, and an expanded control UI is presented. The operating mode and setpoint
+controls are the similar, but there additional controls for fan speed and vane position.
 
 **NOTE:** Since the Intesis WMP devices are gateways for a large number of heating/cooling units by various manufacturers, the capabilities
-of each device vary considerably. For many devices, the UI buttons will have no effect; in some cases, the buttons may affect one unit differently
-from the way they affect another. This is not a defect of the plug-in, it is a limitation in the use of a generic gateway with a specific device.
+of each device vary considerably. For many devices, some UI buttons will have no effect; in some cases, the buttons may affect one unit differently
+from the way they affect another. This is not a defect of the plug-in, but rather the response to Intesis' interpretation of how to best control
+the heating/cooling unit given its capabilities.
 
 ## Actions ##
 
@@ -84,10 +83,18 @@ the name of the Vera device. Use Vera's UI tools for that. When using `SetName`,
 `NewName` (capitalization exactly as shown). The `GetName` action returns the current name of the gateway device in an argument
 named `Name`.
 
+<pre>
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetName", { NewName="Bedroom" }, <i>deviceNumber</i> )
+</pre>
+
 ### FanSpeedUp/FanSpeedDown ###
 
 The `FanSpeedUp` and `FanSpeedDown` actions adjust the fan speed up or down, respectively, within the limits of the gateway and
 the configured heating/cooling unit. These actions take no parameters.
+
+<pre>
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "FanSpeedUp", { }, <i>deviceNumber</i> )
+</pre>
 
 ### SetCurrentFanSpeed/GetCurrentFanSpeed ###
 
@@ -98,6 +105,34 @@ it for the configured heating/cooling unit.
 
 The `GetCurrentFanSpeed` action returns a single argument, `CurrentFanSpeed`, with the gateway's last-reported fan speed (an integer
 or "Auto").
+
+<pre>
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetCurrentFanSpeed", { NewCurrentFanSpeed=2 }, <i>deviceNumber</i> )
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetCurrentFanSpeed", { NewCurrentFanSpeed="Auto" }, <i>deviceNumber</i> )
+</pre>
+
+### VaneUp, VaneDown, VaneLeft, VaneRight###
+
+The `Vane___` actions signal the gateway to change the vane position. These actions take no parameters. Position is changed relative to
+current position, within the limits of the air handling unit.
+
+<pre>
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "VaneUp", { }, <i>deviceNumber</i> )
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "VaneDown", { }, <i>deviceNumber</i> )
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "VaneLeft", { }, <i>deviceNumber</i> )
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "VaneRight", { }, <i>deviceNumber</i> )
+</pre>
+
+### SetLeftRightVanePosition, GetLeftRightVanePosition, SetUpDownVanePosition, GetUpDownVanePosition ###
+
+The `Set___VanePosition` actions set the vane position of the air handling unit to the specified setting, if possible. These actions
+take a single parameter, `NewPosition`, which must be an integer greater than zero (limits are determined by the air handler and vary 
+from device to device), or "Auto". The value zero is also interpreted as "Auto".
+
+<pre>
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetLeftRightVanePosition", { NewPosition=3 }, <i>deviceNumber</i> )
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetUpDownVanePosition", { NewPosition="Auto" }, <i>deviceNumber</i> )
+</pre>
 
 ### GetSignalStrength ###
 
@@ -122,17 +157,20 @@ There is little advanced configuration in the current version of the plug-in, bu
 on the device (under the device panel's Advanced > Variables tab).
 
 ### PingInterval ###
+
 `PingInterval` is the time between pings to the gateway device. These pings are used to keep the TCP connection up between the Vera and the
 gateway. The value of this variable is in seconds, and the default is 15. It is not recommended to set this value lower than 5 or greater
 than 120. If the value is too high (which could be any value greater than the default), disconnects may result, requiring a Luup reload
 for recovery.
 
 ### RefreshInterval ###
+
 `RefreshInterval` is the time between full queries for data from the gateway. Periodically, the plug-in will make a query for all current
 gateway status parameters, to ensure that the Vera plug-in and UI are in sync with the gateway. This value is in seconds, and the default
 is 60. It is not recommended to set this value lower than the ping interval (above).
 
 ### ForceUnits ###
+
 By default, the plug-in will adjust its UI to display temperatures in the default units configured for the Vera controller. If the Vera's
 units are changed, the plug-in will self-reconfigure. If the user has some reason to need the plug-in to present its interfaces in units
 over than the Vera's configured unit, setting `ForceUnits` to "C" or "F" will cause the plug-in to display Fahrenheit or Celsius, 
@@ -140,6 +178,21 @@ respectively.
 
 Note that this variable is not automatically created with the device. You will need to create it using the "Create Service" tab in the
 device's Advanced settings page. The service name is (copy-paste recommended) `urn:toggledbits-com:serviceId:IntesisWMPGateway1`.
+
+## ImperiHome Integration ##
+
+ImperiHome does not, by default, detect many plugin devices, including ImperiHome WMP Gateway. However, it is possible to configure this plugin
+with ImperiHome, as the plugin implements the ImperiHome ISS API.
+
+To connect Intesis WMP Gateway to ImperiHome:
+
+1. In ImperiHome, go into **My Objects**
+1. Click **Add a new object**
+1. Choose **ImperiHome Standard System**
+1. In the **Local base API** field, enter `http://your-vera-local-ip:3480/data_request?id=lr_IntesisWMPGateway&command=ISS&path=`
+1. Click **Next** to connect.
+
+ImperiHome should then populate your groups with your Intesis WMP Gateway plugin devices.
 
 ## Reporting Bugs/Enhancement Requests ##
 
