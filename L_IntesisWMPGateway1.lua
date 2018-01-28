@@ -1,6 +1,6 @@
 -- -----------------------------------------------------------------------------
 -- L_IntesisWMPGateway.lua
--- Copyright 2017 Patrick H. Rigney, All Rights Reserved
+-- Copyright 2017,2018 Patrick H. Rigney, All Rights Reserved
 -- http://www.toggledbits.com/intesis/
 -- This file is available under GPL 3.0. See LICENSE in documentation for info.
 -- -----------------------------------------------------------------------------
@@ -44,15 +44,16 @@
        only assume that the commands are received and obeyed).
 
 --]]
+if luup == nil then luup = {} end -- for lint/check
 
 module("L_IntesisWMPGateway1", package.seeall)
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "1.0-beta2"
+local _PLUGIN_VERSION = "1.0"
 local _CONFIGVERSION = 010000
 
-local debugMode = true
-local traceMode = true
+local debugMode = false
+local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
 local MYTYPE = "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1"
@@ -96,88 +97,6 @@ local sysTemps = { unit="C", default=20, minimum=16, maximum=32 }
 
 local isALTUI = false
 local isOpenLuup = false
-
--- Begin TRACE package
-local function trace( typ, msg )
-    local dkjson = require("dkjson")
-    local http = require("socket.http")
-    local ltn12 = require("ltn12")
-
-    local ts = os.time()
-    local r
-    local t = {
-        ["type"]=typ or 50,
-        plugin=_PLUGIN_NAME or "unknown",
-        pluginVersion=_CONFIGVERSION,
-        serial=luup.pk_accesspoint,
-        systime=ts,
-        sysver=luup.version,
-        longitude=luup.longitude,
-        latitude=luup.latitude,
-        timezone=luup.timezone,
-        city=luup.city,
-        isALTUI=isALTUI,
-        isOpenLuup=isOpenLuup,
-        message=msg or ""
-    }
-
-    local tHeaders = {}
-    local body = dkjson.encode(t)
-    tHeaders["Content-Type"] = "application/json"
-    tHeaders["Content-Length"] = string.len(body)
-
-    -- Make the request.
-    local respBody, httpStatus, httpHeaders
-    http.TIMEOUT = 10
-    respBody, httpStatus, httpHeaders = http.request{
-        url = "http://toggledbits.com/luuptrace/",
-        source = ltn12.source.string(body),
-        sink = ltn12.sink.table(r),
-        method = "POST",
-        headers = tHeaders,
-        redirect = false
-    }
-    if httpStatus == 401 or httpStatus == 404 then
-        traceMode = false
-    end
-end
-local __LL = luup.log
-local function replog( str, lev )
-    __LL( "(replog) " .. str, lev )
-    if traceMode then trace( lev, str ) end
-end
--- luup.log = replog -- replace luup.log
--- End of TRACE package
-
-local mt = getmetatable(_G)
-if mt == nil then
-  mt = {}
-  setmetatable(_G, mt)
-end
-
-__STRICT = true
-mt.__declared = {}
-
-mt.__newindex = function (t, n, v)
-  if __STRICT and not mt.__declared[n] then
-    local w = debug.getinfo(2, "S").what
-    if w ~= "main" and w ~= "C" then
-      luup.log(_PLUGIN_NAME .. ": ASSIGNMENT TO GLOBAL "..n,2)
-      -- error("assign to undeclared variable '"..n.."'", 2)
-    end
-    mt.__declared[n] = true
-  end
-  rawset(t, n, v)
-end
-
-mt.__index = function (t, n)
-  if not mt.__declared[n] and debug.getinfo(2, "S").what ~= "C" then
-    luup.log(_PLUGIN_NAME .. ": REFERENCE TO UNDECLARED GLOBAL " .. n,1)
-    luup.log(debug.traceback(),1)
-    -- error("variable '"..n.."' is not declared", 2)
-  end
-  return rawget(t, n)
-end
 
 local function dump(t)
     if t == nil then return "nil" end
@@ -710,13 +629,90 @@ function actionSetName( dev, newName )
     return sendCommand( "ID", dev )
 end
 
+local function issKeyVal( k, v, s )
+    if s == nil then s = {} end
+    s["key"] = tostring(k)
+    s["value"] = tostring(v)
+    return s
+end
+
+local function map( m, v, d )
+    if m[v] == nil then return d end
+    return m[v]
+end
+
 function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
     D("plugin_requestHandler(%1,%2,%3)", lul_request, lul_parameters, lul_outputformat)
     local action = lul_parameters['command'] or "status"
     if action == "debug" then
         debugMode = not debugMode
     end
+    if action == "ISS" then
+        -- ImperiHome ISS Standard System API, see http://dev.evertygo.com/api/iss#types
+        local dkjson = require('dkjson')
+        local path = lul_parameters['path'] or "/devices"
+        if path == "/system" then
+            return dkjson.encode( { id="IntesisWMPGateway-" .. luup.pk_accesspoint, apiversion=1 } ), "application/json"
+        elseif path == "/rooms" then
+            local roomlist = { { id=0, name="No Room" } }
+            local rn,rr
+            for rn,rr in pairs( luup.rooms ) do 
+                table.insert( roomlist, { id=rn, name=rr } )
+            end
+            return dkjson.encode( { rooms=roomlist } ), "application/json"
+        elseif path == "/devices" then
+            local devices = {}
+            local lnum,ldev
+            for lnum,ldev in pairs( luup.devices ) do
+                if ldev.device_type == MYTYPE then
+                    local issinfo = {}
+                    table.insert( issinfo, issKeyVal( "curmode", map( { Off="Off",HeatOn="Heat",CoolOn="Cool",AutoChangeOver="Auto",Dry="Dry",FanOnly="Fan" }, luup.variable_get( OPMODE_SID, "ModeStatus", lnum ), "Off" ) ) )
+                    table.insert( issinfo, issKeyVal( "curfanmode", map( { Auto="Auto",ContinuousOn="On",PeriodicOn="Periodic" }, luup.variable_get(FANMODE_SID, "Mode", lnum), "Auto" ) ) )
+                    table.insert( issinfo, issKeyVal( "curtemp", luup.variable_get( TEMPSENS_SID, "CurrentTemperature", lnum ), { unit="°" .. sysTemps.unit } ) )
+                    table.insert( issinfo, issKeyVal( "cursetpoint", getVarNumeric( "CurrentSetpoint", sysTemps.default, lnum, SETPOINT_SID ) ) )
+                    table.insert( issinfo, issKeyVal( "step", 0.5 ) )
+                    table.insert( issinfo, issKeyVal( "minVal", sysTemps.minimum ) )
+                    table.insert( issinfo, issKeyVal( "maxVal", sysTemps.maximum ) )
+                    table.insert( issinfo, issKeyVal( "availablemodes", "Off,Heat,Cool,Auto,Fan,Dry" ) )
+                    table.insert( issinfo, issKeyVal( "availablefanmodes", "Auto" ) )
+                    local dev = { id=tostring(lnum), 
+                        name=ldev.description or ("#" .. lnum), 
+                        ["type"]="DevThermostat", 
+                        defaultIcon="https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
+                        params=issinfo }
+                    if ldev.room_num ~= nil and ldev.room_num ~= 0 then dev.room = tostring(ldev.room_num) end
+                    table.insert( devices, dev )
+                end
+            end
+            return dkjson.encode( { devices=devices } ), "application/json"
+        else
+            local dev, act, p = string.match( path, "/devices/([^/]+)/action/([^/]+)/*(.*)$" )
+            dev = tonumber( dev, 10 )
+            if dev ~= nil and act ~= nil then
+                act = string.upper( act )
+                D("plugin_requestHandler() handling action path %1, dev %2, action %3, param %4", path, dev, act, p )
+                if act == "SETMODE" then
+                    local newMode = map( { OFF="Off",HEAT="HeatOn",COOL="CoolOn",AUTO="AutoChangeOver",FAN="FanOnly",DRY="Dry" }, string.upper( p or "" ) )
+                    actionSetModeTarget( dev, newMode )
+                elseif act == "SETFANMODE" then
+                    local newMode = map( { AUTO="Auto", ON="ContinuousOn", PERIODIC="PeriodicOn" }, string.upper( p or "" ) )
+                    actionSetFanMode( dev, newMode )
+                elseif act == "SETSETPOINT" then
+                    local temp = tonumber( p, 10 )
+                    if temp ~= nil then
+                        actionSetCurrentSetpoint( dev, temp )
+                    end
+                else
+                    D("plugin_requestHandler(): ISS action %1 not handled, ignored", act)
+                end
+            else 
+                D("plugin_requestHandler(): don't know how to handle ISS response for %1", path)
+                return false
+            end
+        end
+    end
 
+    -- Default, respond with status info.
     local status = {
         name=_PLUGIN_NAME,
         version=_PLUGIN_VERSION,
@@ -760,7 +756,6 @@ local function plugin_runOnce(dev)
         luup.variable_set(MYSID, "IntesisVANELR", "", dev)
         luup.variable_set(MYSID, "IntesisERRSTATUS", "", dev)
         luup.variable_set(MYSID, "IntesisERRCODE", "", dev)
-
         
         luup.variable_set(OPMODE_SID, "ModeTarget", MODE_OFF, dev)
         luup.variable_set(OPMODE_SID, "ModeStatus", MODE_OFF, dev)
@@ -769,7 +764,7 @@ local function plugin_runOnce(dev)
         luup.variable_set(OPMODE_SID, "AutoMode", "1", dev)
 
         luup.variable_set(FANMODE_SID, "Mode", FANMODE_AUTO, dev)
-        luup.variable_set(FANMODE_SID, "FanStatus", "Unknown", dev)
+        luup.variable_set(FANMODE_SID, "FanStatus", "Off", dev)
 
         -- Setpoint defaults. Note that we don't have sysTemps yet during this call.
         -- luup.variable_set(SETPOINT_SID, "Application", "DualHeatingCooling", dev)
