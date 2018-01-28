@@ -8,6 +8,7 @@ var IntesisWMPGateway_ALTUI = ( function( window, undefined ) {
                 var w = MultiBox.getWeatherSettings();
                 var s;
                 s = MultiBox.getStatus( device, "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "DisplayTemperature");
+                s += "<br/>" + MultiBox.getStatus( device, "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "DisplayStatus");
                 html += '<div>' + s + '</div>';
                 return html;
         }
