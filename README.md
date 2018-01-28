@@ -151,13 +151,13 @@ In addition to the above actions, the Intesis WMP Gateway plug-in implements the
 The plug-in also provides many of the state variables behind these services. In addition, the plug-in maintains the `CurrentTemperature` 
 state variable of the `urn:upnp-org:serviceId:TemperatureSensor1` service (current ambient temperature as reported by the gateway).
 
-**NOTE:** The model for handling fan mode differs significantly between Intesis and Vera. In Vera/UPnP, setting the fan mode to ContinuousOn
+**IMPORTANT:** The model for handling fan mode differs significantly between Intesis and Vera. In Vera/UPnP, setting the fan mode to `ContinuousOn`
 turns the fan on, but does not change the operating mode of the air handling unit. For example, with the fan mode set to ContinuousOn,
 if the AHU is cooling, it continues to cool until setpoint is achieved, at which time cooling shuts down but the fan continues to operate.
-In Intesis, to get continuous operation of the fan, one sets the operating mode to "Fan", which will stop the AHU from heating or cooling.
+In Intesis, to get continuous operation of the fan, one sets the (operating) mode to "Fan", which will stop the AHU from heating or cooling.
 Because of this, the plugin does not react to the `SetMode` action in service `urn:upnp-org:serviceId:HVAC_FanOperatingMode1` 
 (it is quietly ignored).
-In addition, the `FanStatus` state can only be surmised in the "Off" or "FanOnly" operating modes, in which case the status will
+In addition, the `FanStatus` state can only be deduced in the "Off" or "FanOnly" operating modes, in which case the status will
 be "Off" or "On" respectively; in all other cases it will be "Unknown".
 
 ## Advanced Configuration ##
@@ -191,14 +191,15 @@ device's Advanced settings page. The service name is (copy-paste recommended) `u
 ## ImperiHome Integration ##
 
 ImperiHome does not, by default, detect many plugin devices, including ImperiHome WMP Gateway. However, it is possible to configure this plugin
-with ImperiHome, as the plugin implements the ImperiHome ISS API.
+for use with ImperiHome, as the plugin implements the [ImperiHome ISS API](http://dev.evertygo.com/api/iss).
 
 To connect Intesis WMP Gateway to ImperiHome:
 
 1. In ImperiHome, go into **My Objects**
 1. Click **Add a new object**
 1. Choose **ImperiHome Standard System**
-1. In the **Local base API** field, enter `http://your-vera-local-ip:3480/data_request?id=lr_IntesisWMPGateway&command=ISS&path=`
+1. In the **Local base API** field, enter 
+   `http://your-vera-local-ip:3480/data_request?id=lr_IntesisWMPGateway&command=ISS&path=`
 1. Click **Next** to connect.
 
 ImperiHome should then populate your groups with your Intesis WMP Gateway plugin devices.
