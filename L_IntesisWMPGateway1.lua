@@ -50,6 +50,7 @@ module("L_IntesisWMPGateway1", package.seeall)
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
 local _PLUGIN_VERSION = "1.0"
+local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 010000
 
 local debugMode = false
@@ -641,16 +642,44 @@ local function map( m, v, d )
     return m[v]
 end
 
+local function getDevice( dev, pdev, v )
+    local dkjson = require("dkjson")
+    if v == nil then v = luup.devices[dev] end
+    local devinfo = { 
+          devNum=dev
+        , ['type']=v.device_type
+        , description=v.description or ""
+        , room=v.room_num or 0
+        , udn=v.udn or ""
+        , id=v.id
+        , ['device_json'] = luup.attr_get( "device_json", k )
+        , ['impl_file'] = luup.attr_get( "impl_file", k )
+        , ['device_file'] = luup.attr_get( "device_file", k )
+    }
+    local rc,t,httpStatus
+    rc,t,httpStatus = luup.inet.wget("http://localhost/port_3480/data_request?id=status&DeviceNum=" .. dev .. "&output_format=json", 15)
+    if httpStatus ~= 200 or rc ~= 0 then 
+        devinfo['_comment'] = string.format( 'State info could not be retrieved, rc=%d, http=%d', rc, httpStatus )
+        return devinfo
+    end
+    local d = dkjson.decode(t)
+    local key = "Device_Num_" .. dev
+    if d ~= nil and d[key] ~= nil and d[key].states ~= nil then d = d[key].states else d = nil end
+    devinfo.states = d or {}
+    return devinfo
+end
+
 function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
     D("plugin_requestHandler(%1,%2,%3)", lul_request, lul_parameters, lul_outputformat)
-    local action = lul_parameters['command'] or "status"
+    local action = lul_parameters['action'] or lul_parameters['command'] or ""
     if action == "debug" then
         debugMode = not debugMode
+        return "Debug is now " .. tostring(debugMode), "text/plain"
     end
-    if action == "ISS" then
+    if action:sub( 1, 3 ) == "ISS" then
         -- ImperiHome ISS Standard System API, see http://dev.evertygo.com/api/iss#types
         local dkjson = require('dkjson')
-        local path = lul_parameters['path'] or "/devices"
+        local path = lul_parameters['path'] or action:sub( 4 ) -- Work even if I'home user forgets &path=
         if path == "/system" then
             return dkjson.encode( { id="IntesisWMPGateway-" .. luup.pk_accesspoint, apiversion=1 } ), "application/json"
         elseif path == "/rooms" then
@@ -705,24 +734,50 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
                 else
                     D("plugin_requestHandler(): ISS action %1 not handled, ignored", act)
                 end
-            else 
-                D("plugin_requestHandler(): don't know how to handle ISS response for %1", path)
-                return false
+            else
+                D("plugin_requestHandler() malformed action request %1", path)
             end
+            return "{}", "application/json"
         end
     end
 
-    -- Default, respond with status info.
-    local status = {
-        name=_PLUGIN_NAME,
-        version=_PLUGIN_VERSION,
-        config=_CONFIGVERSION,
-        device=luup.device,
-        ['debug']=debugMode,
-        ['trace']=traceMode or false,
-    }
-    local dkjson = require('dkjson')
-    return dkjson.encode( status ), "application/json"
+    if action == "status" then
+        local dkjson = require("dkjson")
+        if dkjson == nil then return "Missing dkjson library", "text/plain" end
+        local st = {
+            name=_PLUGIN_NAME,
+            version=_PLUGIN_VERSION,
+            configversion=_CONFIGVERSION,
+            author="Patrick H. Rigney (rigpapa)",
+            url=_PLUGIN_URL,
+            ['type']=MYTYPE,
+            responder=luup.device,
+            timestamp=os.time(),
+            system = {
+                version=luup.version,
+                isOpenLuup=isOpenLuup,
+                isALTUI=isALTUI,
+                units=luup.attr_get( "TemperatureFormat", 0 ),
+            },            
+            devices={}
+        }
+        local k,v
+        for k,v in pairs( luup.devices ) do
+            if v.device_type == MYTYPE then
+                devinfo = getDevice( k, luup.device, v ) or {}
+                table.insert( st.devices, devinfo )
+            end
+        end
+        return dkjson.encode( st ), "application/json"
+    end
+    
+    return "<html><head><title>" .. _PLUGIN_NAME .. " Request Handler"
+        .. "</title></head><body bgcolor='white'>Request format: <tt>http://" .. (luup.attr_get( "ip", 0 ) or "...")
+        .. ":3480/data_request?id=lr_" .. lul_request 
+        .. "&action=</tt><p>Actions: status, debug, ISS"
+        .. "<p>Imperihome ISS URL: <tt>...&action=ISS&path=</tt><p>Documentation: <a href='"
+        .. _PLUGIN_URL .. "' target='_blank'>" .. _PLUGIN_URL .. "</a></body></html>"
+        , "text/html"
 end
 
 local function plugin_checkVersion(dev)
@@ -774,7 +829,10 @@ local function plugin_runOnce(dev)
         else
             luup.variable_set(SETPOINT_SID, "CurrentSetpoint", "64", dev)
         end
-
+        
+        luup.variable_set(HADEVICE_SID, "ModeSetting", "1:;2:;3:;4:", dev)
+        luup.variable_set(HADEVICE_SID, "Commands", "thermostat_mode_off,thermostat_mode_heat,thermostat_mode_cool,thermostat_mode_auto", dev)
+        
         luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
         return
     end
