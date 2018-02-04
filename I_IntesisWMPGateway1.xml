@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <implementation>
     <functions>
-local BAUD_RATE = 38400
-local IP_PORT = 3310
-
-local socket = require("socket")
-host = luup.attr_get('ip', lul_device)
-c = assert(socket.connect(host, IP_PORT))
-
         -- -------------------------------------------------------------------------------------------------------------------------
         -- IntesisWMPGateway -- Intesis (ASCII) interface for Vera/MiOS
         --
@@ -20,6 +13,8 @@ c = assert(socket.connect(host, IP_PORT))
             IntesisWMPGateway = require("L_IntesisWMPGateway1")
             intesisTick = IntesisWMPGateway.plugin_tick
             intesisVarChanged = IntesisWMPGateway.varChanged
+            intesisRequestHandler = IntesisWMPGateway.plugin_requestHandler
+            luup.register_handler("intesisRequestHandler", "IntesisWMPGateway")
             return IntesisWMPGateway.plugin_init(dev)
         end
     </functions>
@@ -153,6 +148,70 @@ c = assert(socket.connect(host, IP_PORT))
             <name>GetCurrentFanSpeed</name>
             <run>
                 -- Luup takes care of returning relatedStateVariable
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>SetLeftRightVanePosition</name>
+            <run>
+                -- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
+                IntesisWMPGateway.actionSetVaneLR( lul_device, lul_settings.NewPosition )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>GetLeftRightVanePosition</name>
+            <run>
+                -- Return current L/R vale position setting.
+                -- Luup takes care of returning relatedStateVariable
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>VaneLeft</name>
+            <run>
+                -- Set Intesis vane position up (relative)
+                IntesisWMPGateway.actionVaneLeft( lul_device )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>VaneRight</name>
+            <run>
+                -- Set Intesis vane position down (relative)
+                IntesisWMPGateway.actionVaneRight( lul_device )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>SetUpDownVanePosition</name>
+            <run>
+                -- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
+                IntesisWMPGateway.actionSetVaneUD( lul_device, lul_settings.NewPosition )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>GetUpDownVanePosition</name>
+            <run>
+                -- Return current U/D vale position setting.
+                -- Luup takes care of returning relatedStateVariable
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>VaneUp</name>
+            <run>
+                -- Set Intesis vane position up (relative)
+                IntesisWMPGateway.actionVaneUp( lul_device )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>VaneDown</name>
+            <run>
+                -- Set Intesis vane position down (relative)
+                IntesisWMPGateway.actionVaneDown( lul_device )
             </run>
         </action>
         <action>

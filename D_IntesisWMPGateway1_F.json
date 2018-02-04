@@ -7,7 +7,6 @@
 				"variable": "ModeStatus",
 				"operator": "==",
 				"value": "HeatOn",
-				"subcategory_num": 0
 			}]
 		},
 		{
@@ -17,7 +16,6 @@
 				"variable": "ModeStatus",
 				"operator": "==",
 				"value": "CoolOn",
-				"subcategory_num": 0
 			}]
 		},
 		{
@@ -27,7 +25,24 @@
 				"variable": "ModeStatus",
 				"operator": "==",
 				"value": "AutoChangeOver",
-				"subcategory_num": 0
+			}]
+		},
+		{
+			"img": "https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "FanOnly",
+			}]
+		},
+		{
+			"img": "https://www.toggledbits.com/intesis/assets/wmp_mode_cool.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "Dry",
 			}]
 		}
 	],
@@ -41,6 +56,7 @@
 			},
 			"Position": "0",
 			"TabType": "flash",
+            "top_navigation_tab": 1,
 			"ControlGroup": [{
 					"id": "1",
 					"scenegroup": "1"
@@ -92,11 +108,11 @@
 					"top": "0",
 					"left": "0",
 					"Label": {
-						"lang_tag": "thermostat",
-						"text": "Simple Virtual Thermostat"
+						"lang_tag": "wmp_mode",
+						"text": "Mode"
 					},
 					"Display": {
-						"Top": 8,
+						"Top": 0,
 						"Left": 30,
 						"Width": 100,
 						"Height": 25
@@ -140,8 +156,8 @@
 						"text": "Auto"
 					},
 					"Display": {
-						"Top": 30,
-						"Left": 150,
+						"Top": 60,
+						"Left": 50,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -173,7 +189,7 @@
 					},
 					"Display": {
 						"Top": 30,
-						"Left": 250,
+						"Left": 150,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -200,8 +216,8 @@
 						"text": "Heat"
 					},
 					"Display": {
-						"Top": 30,
-						"Left": 350,
+						"Top": 60,
+						"Left": 150,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -219,41 +235,100 @@
 					"ControlCode": "hvac_heat"
 				},
 				{
+					"ControlGroup": "1",
+					"ControlType": "line_break"
+				},
+				{
+					"ControlGroup": "1",
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_fan",
+						"text": "Fan"
+					},
+					"Display": {
+						"Top": 30,
+						"Left": 250,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "FanOnly"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "FanOnly"
+						}]
+					},
+					"ControlCode": "hvac_fanonly"
+				},
+				{
+					"ControlGroup": "1",
+					"ControlType": "button",
+					"top": "4",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_dry",
+						"text": "Dry"
+					},
+					"Display": {
+						"Top": 60,
+						"Left": 250,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "Dry"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "Dry"
+						}]
+					},
+					"ControlCode": "hvac_dry"
+				},
+				{
 					"ControlGroup": "2",
-					"ControlType": "slider_vertical",
+					"ControlType": "spinner_horizontal",
 					"top": "0",
 					"left": "2",
 					"ID": "NewSP",
 					"Style": "numeric",
-					"LabelMin": {
-						"lang_tag": "tb_wmp_setpointmin",
-						"text": "60"
-					},
-					"LabelMax": {
-						"lang_tag": "tb_wmp_setpointmax",
-						"text": "90"
-					},
-					"LabelSymbol": {
-						"lang_tag": "tb_wmp_unitsym",
-						"text": "&deg;"
-					},
+                    "LabelUp": {
+                        "lang_tag": "temperature_increase",
+                        "text": "increase"
+                    },
+                    "LabelDown": {
+                        "lang_tag": "temperature_decrease",
+                        "text": "decrease"
+                    },
+                    "LabelSymbol": {
+                        "lang_tag": "heater_label_symbol",
+                        "text": "&deg;F"
+                    },
 					"Display": {
 						"Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
 						"Variable": "CurrentSetpoint",
 						"MinValue": 60,
 						"MaxValue": 90,
-						"Top": 30,
-						"Left": 460,
-						"Width": 100,
-						"Height": 20
+                        "Step": 0.5,
+                        "Editable": 1,
+						"Top": 0,
+						"Left": 360,
+						"Width": 80,
+						"Height": 60
 					},
 					"Command": {
 						"Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
 						"Action": "SetCurrentSetpoint",
-						"Parameters": [{
-							"Name": "NewCurrentSetpoint",
-							"ID": "NewSP"
-						}]
+                        "ActionArgumentName": "NewCurrentSetpoint"
 					},
 					"ControlCode": "intesis_setpoint"
 				},
@@ -264,13 +339,13 @@
 					"left": "0",
 					"text_align": "left",
 					"Label": {
-						"lang_tag": "fan",
-						"text": "Fan"
+						"lang_tag": "wmp_fanspeed",
+						"text": "Fan Speed"
 					},
 					"Display": {
-						"Top": 60,
+						"Top": 90,
 						"Left": 30,
-						"Width": 100,
+						"Width": 80,
 						"Height": 25
 					},
 					"ControlCode": "fan_label"
@@ -281,12 +356,12 @@
 					"top": "0.1",
 					"left": "1",
 					"Display": {
-						"Top": 60,
-						"Left": 60,
-						"Width": 48,
+						"Top": 90,
+						"Left": 120,
+						"Width": 120,
 						"Height": 25,
 						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
-						"Variable": "DisplayFanStatus"
+						"Variable": "IntesisFANSP"
 					},
 					"ControlCode": "hvac_fanstate"
 				},
@@ -299,20 +374,20 @@
 						"text": "Auto"
 					},
 					"Display": {
-						"Top": 90,
+						"Top": 120,
 						"Left": 50,
-						"Width": 80,
+						"Width": 60,
 						"Height": 20,
-						"Service": "urn:upnp-org:serviceId:HVAC_FanOperatingMode1",
-						"Variable": "Mode",
-						"Value": "Auto"
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Variable": "IntesisFANSP",
+						"Value": "AUTO"
 					},
 					"Command": {
-						"Service": "urn:upnp-org:serviceId:HVAC_FanOperatingMode1",
-						"Action": "SetMode",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "SetCurrentFanSpeed",
 						"Parameters": [{
-							"Name": "NewMode",
-							"Value": "Auto"
+							"Name": "NewFanSpeed",
+							"Value": "0"
 						}]
 					},
 					"ControlCode": "fan_auto"
@@ -322,12 +397,12 @@
 					"top": "2",
 					"left": "0",
 					"Label": {
-						"lang_tag": "cmd_fan_slower",
+						"lang_tag": "wmp_fan_slower",
 						"text": "&darr;"
 					},
 					"Display": {
-						"Top": 90,
-						"Left": 140,
+						"Top": 120,
+						"Left": 120,
 						"Width": 40,
 						"Height": 20
 					},
@@ -343,12 +418,12 @@
 					"top": "2",
 					"left": "0",
 					"Label": {
-						"lang_tag": "cmd_fan_faster",
+						"lang_tag": "wmp_fan_faster",
 						"text": "&uarr;"
 					},
 					"Display": {
-						"Top": 90,
-						"Left": 190,
+						"Top": 120,
+						"Left": 170,
 						"Width": 40,
 						"Height": 20
 					},
@@ -369,7 +444,7 @@
 						"text": "&deg;_TEMPERATURE_FORMAT_"
 					},
 					"Display": {
-						"Top": 120,
+						"Top": 180,
 						"Left": 30,
 						"Width": 100,
 						"Height": 25,
@@ -379,15 +454,203 @@
 					"ControlCode": "wmp_temp"
 				},
 				{
+					"ControlGroup": "4",
+					"ControlType": "line_break"
+				},
+				{
+					"ControlGroup": "4",
+					"ControlType": "variable",
+					"top": "0.5",
+					"left": "0",
+					"LabelSymbol": {
+						"lang_tag": "wmp_status",
+						"text": "Status"
+					},
+					"Display": {
+						"Top": 0,
+						"Left": 150,
+						"Width": 320,
+						"Height": 25,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Variable": "DisplayStatus"
+					},
+					"ControlCode": "wmp_status"
+				},
+                
+                
+                
+                
+                
+				{
+					"ControlType": "label",
+					"top": "0.1",
+					"left": "0",
+					"text_align": "left",
+					"Label": {
+						"lang_tag": "wmp_vanes",
+						"text": "Vanes"
+					},
+					"Display": {
+						"Top": 90,
+						"Left": 250,
+						"Width": 130,
+						"Height": 25
+					},
+					"ControlCode": "vanes_label"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_vanes_up",
+						"text": "&uarr;"
+					},
+					"Display": {
+						"Top": 120,
+						"Left": 295,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "VaneUp",
+						"Parameters": []
+					},
+					"ControlCode": "vane_up"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_vanes_left",
+						"text": "&larr;"
+					},
+					"Display": {
+						"Top": 150,
+						"Left": 270,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "VaneLeft",
+						"Parameters": []
+					},
+					"ControlCode": "vane_left"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_vanes_right",
+						"text": "&rarr;"
+					},
+					"Display": {
+						"Top": 150,
+						"Left": 320,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "VaneRight",
+						"Parameters": []
+					},
+					"ControlCode": "vane_right"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_vanes_down",
+						"text": "&darr;"
+					},
+					"Display": {
+						"Top": 180,
+						"Left": 295,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "VaneDown",
+						"Parameters": []
+					},
+					"ControlCode": "vane_down"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_vaneud_auto",
+						"text": "&uarr;Auto&darr;"
+					},
+					"Display": {
+						"Top": 210,
+						"Left": 250,
+						"Width": 60,
+						"Height": 20,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Variable": "IntesisVANEUD",
+						"Value": "AUTO"
+
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "SetUpDownVanePosition",
+						"Parameters": [{
+                            "Name": "NewPosition",
+                            "Value": 0
+                            }]
+					},
+					"ControlCode": "vane_autoud"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_vanelr_auto",
+						"text": "&larr;Auto&rarr;"
+					},
+					"Display": {
+						"Top": 210,
+						"Left": 320,
+						"Width": 60,
+						"Height": 20,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Variable": "IntesisVANELR",
+						"Value": "AUTO"
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "SetLeftRightVanePosition",
+						"Parameters": [{
+                            "Name": "NewPosition",
+                            "Value": 0
+                            }]
+					},
+					"ControlCode": "vane_autolr"
+				},
+                
+                
+                
+                
+				{
 					"ControlType": "label",
 					"top": "0.2",
 					"left": "0",
 					"Label": {
-						"lang_tag": "intesiswmp_about",
-						"text": "Intesis WMP Plug-in v1.0-beta &copy; 2017 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+						"lang_tag": "wmp_about",
+						"text": "Intesis WMP Gateway plug-in v1.0 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
 					},
 					"Display": {
-						"Top": 180,
+						"Top": 270,
 						"Left": 30,
 						"Width": 300,
 						"Height": 25
@@ -452,29 +715,43 @@
 				"allowedValueList": [{
 						"Off": "Off",
 						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_turned_off",
+							"lang_tag": "wmp_turned_off",
 							"text": "_DEVICE_NAME_ is turned off"
 						}
 					},
 					{
 						"Cool": "CoolOn",
 						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_set_to_cool",
+							"lang_tag": "wmp_set_to_cool",
 							"text": "_DEVICE_NAME_ mode changed to cool"
 						}
 					},
 					{
 						"Heat": "HeatOn",
 						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_set_to_heat",
+							"lang_tag": "wmp_set_to_heat",
 							"text": "_DEVICE_NAME_ mode changed to heat"
 						}
 					},
 					{
 						"Auto": "AutoChangeOver",
 						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_set_to_auto",
+							"lang_tag": "wmp_set_to_auto",
 							"text": "_DEVICE_NAME_ mode changed to auto"
+						}
+					},
+					{
+						"Fan": "FanOnly",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_fanonly",
+							"text": "_DEVICE_NAME_ mode changed to fan only"
+						}
+					},
+					{
+						"Dry": "Dry",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_dry",
+							"text": "_DEVICE_NAME_ mode changed to dry"
 						}
 					}
 				],
@@ -489,68 +766,6 @@
 		},
 		{
 			"id": 2,
-			"label": {
-				"lang_tag": "thermostat_fanmode_changes",
-				"text": "Thermostat Fan Mode Changes"
-			},
-			"serviceId": "urn:upnp-org:serviceId:HVAC_FanOperatingMode1",
-			"argumentList": [{
-				"id": 1,
-				"dataType": "string",
-				"defaultValue": "",
-				"allowedValueList": [{
-						"Auto": "Auto",
-						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_fan_auto",
-							"text": "_DEVICE_NAME_ fan mode changes to AUTO"
-						}
-					},
-					{
-						"1": "1",
-						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_fan_speed1",
-							"text": "_DEVICE_NAME_ fan mode changes to speed 1"
-						}
-					},
-					{
-						"2": "2",
-						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_fan_speed2",
-							"text": "_DEVICE_NAME_ fan mode changes to speed 2"
-						}
-					},
-					{
-						"3": "3",
-						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_fan_speed3",
-							"text": "_DEVICE_NAME_ fan mode changed to speed 3"
-						}
-					},
-					{
-						"4": "4",
-						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_fan_speed4",
-							"text": "_DEVICE_NAME_ fan mode changed to speed 4"
-						}
-					},
-					{
-						"5": "5",
-						"HumanFriendlyText": {
-							"lang_tag": "tb_wmp_fan_speed5",
-							"text": "_DEVICE_NAME_ fan mode changed to speed 5"
-						}
-					}
-				],
-				"name": "Mode",
-				"comparisson": "=",
-				"prefix": {
-					"lang_tag": "tb_wmp_fanmode",
-					"text": "Mode"
-				}
-			}]
-		},
-		{
-			"id": 3,
 			"label": {
 				"lang_tag": "ambient_temperature_goes_above",
 				"text": "Ambient temperature goes above"
@@ -577,7 +792,7 @@
 			}]
 		},
 		{
-			"id": 4,
+			"id": 3,
 			"label": {
 				"lang_tag": "ambient_temperature_goes_below",
 				"text": "Ambient temperature goes below"
@@ -604,7 +819,7 @@
 			}]
 		},
 		{
-			"id": 5,
+			"id": 4,
 			"label": {
 				"lang_tag": "thermostat_setpoint_goes_above",
 				"text": "Thermostat setpoint goes above"
@@ -630,7 +845,7 @@
 			}]
 		},
 		{
-			"id": 6,
+			"id": 5,
 			"label": {
 				"lang_tag": "thermostat_setpoint_goes_below",
 				"text": "Thermostat setpoint goes below"

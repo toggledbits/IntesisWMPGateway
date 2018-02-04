@@ -5,18 +5,12 @@
         <minor>0</minor>
     </specVersion>
     <serviceStateTable>
-        <stateVariable sendEvents="yes">
-            <name>CurrentFanSpeed</name>
-            <dataType>string</dataType>
-            <defaultValue>Auto</defaultValue>
-            <shortCode>fanspeed</shortCode>
-        </stateVariable>
         <stateVariable sendEvents="no">
             <name>Name</name>
             <dataType>string</dataType>
             <defaultValue></defaultValue>
         </stateVariable>
-        <stateVariable sendEvents="no">
+        <stateVariable sendEvents="yes">
             <name>SignalDB</name>
             <dataType>i4</dataType>
             <defaultValue></defaultValue>
@@ -49,6 +43,16 @@
             <name>IntesisVANELR</name>
             <dataType>string</dataType>
             <defaultValue>AUTO</defaultValue>
+        </stateVariable>
+        <stateVariable sendEvents="yes">
+            <name>IntesisERRSTATUS</name>
+            <dataType>string</dataType>
+            <defaultValue>OK</defaultValue>
+        </stateVariable>
+        <stateVariable sendEvents="yes">
+            <name>IntesisERRCODE</name>
+            <dataType>string</dataType>
+            <defaultValue></defaultValue>
         </stateVariable>
     </serviceStateTable>
     <actionList>
@@ -100,7 +104,7 @@
                 <argument>
                     <name>NewCurrentFanSpeed</name>
                     <direction>in</direction>
-                    <relatedStateVariable>CurrentFanSpeed</relatedStateVariable>
+                    <relatedStateVariable>IntesisFANSP</relatedStateVariable>
                 </argument>
             </argumentList>
         </action>
@@ -110,9 +114,71 @@
                 <argument>
                    <name>CurrentFanSpeed</name>
                    <direction>out</direction>
-                   <relatedStateVariable>CurrentFanSpeed</relatedStateVariable>
+                   <relatedStateVariable>IntesisFANSP</relatedStateVariable>
                    <retval/>
                 </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>SetLeftRightVanePosition</name>
+            <argumentList>
+                <argument>
+                    <name>NewPosition</name>
+                    <direction>in</direction>
+                    <relatedStateVariable>IntesisVANELR</relatedStateVariable>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>GetLeftRightVanePosition</name>
+            <argumentList>
+                <argument>
+                   <name>CurrentPosition</name>
+                   <direction>out</direction>
+                   <relatedStateVariable>IntesisVANELR</relatedStateVariable>
+                   <retval/>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>VaneLeft</name>
+            <argumentList>
+            </argumentList>
+        </action>
+        <action>
+            <name>VaneRight</name>
+            <argumentList>
+            </argumentList>
+        </action>
+        <action>
+            <name>SetUpDownVanePosition</name>
+            <argumentList>
+                <argument>
+                    <name>NewPosition</name>
+                    <direction>in</direction>
+                    <relatedStateVariable>IntesisVANEUD</relatedStateVariable>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>GetUpDownVanePosition</name>
+            <argumentList>
+                <argument>
+                   <name>CurrentPosition</name>
+                   <direction>out</direction>
+                   <relatedStateVariable>IntesisVANEUD</relatedStateVariable>
+                   <retval/>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>VaneUp</name>
+            <argumentList>
+            </argumentList>
+        </action>
+        <action>
+            <name>VaneDown</name>
+            <argumentList>
             </argumentList>
         </action>
     </actionList>
