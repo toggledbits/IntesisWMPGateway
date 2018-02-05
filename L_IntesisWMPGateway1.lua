@@ -14,7 +14,7 @@
 
     There a couple of differences between the Vera/UPnP(-ish) model and Intesis model of a 
     thermostat. 
-    
+
     1) In Vera, the concept of On/Off is a mode of the thermostat, where Intesis handles it
        separately from the mode. When "off", this driver holds ModeStatus and ModeTarget at
        "Off", while separately tracking the last real mode Intesis reports it is in. A switch
@@ -652,9 +652,11 @@ local function getDevice( dev, pdev, v )
         , room=v.room_num or 0
         , udn=v.udn or ""
         , id=v.id
-        , ['device_json'] = luup.attr_get( "device_json", k )
-        , ['impl_file'] = luup.attr_get( "impl_file", k )
-        , ['device_file'] = luup.attr_get( "device_file", k )
+        , ['device_json'] = luup.attr_get( "device_json", dev )
+        , ['impl_file'] = luup.attr_get( "impl_file", dev )
+        , ['device_file'] = luup.attr_get( "device_file", dev )
+        , manufacturer = luup.attr_get( "manufacturer", dev ) or ""
+        , model = luup.attr_get( "model", dev ) or ""
     }
     local rc,t,httpStatus
     rc,t,httpStatus = luup.inet.wget("http://localhost/port_3480/data_request?id=status&DeviceNum=" .. dev .. "&output_format=json", 15)
