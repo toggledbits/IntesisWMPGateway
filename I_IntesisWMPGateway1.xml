@@ -221,5 +221,12 @@
                 -- Luup takes care of returning relatedStateVariable (SignalDB)
             </run>
         </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>SetDebug</name>
+            <run>
+                IntesisWMPGateway.actionSetDebug( lul_device, lul_settings.debug )
+            </run>
+        </action>
     </actionList>
 </implementation>

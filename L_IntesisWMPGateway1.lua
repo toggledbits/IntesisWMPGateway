@@ -630,6 +630,14 @@ function actionSetName( dev, newName )
     return sendCommand( "ID", dev )
 end
 
+function actionSetDebug( dev, enabled )
+    D("actionSetDebug(%1,%2)", dev, state)
+    if state == 1 or state == "1" or state == true or state == "true" then 
+        debugMode = true 
+        D("actionSetDebug() debug logging enabled")
+    end
+end
+
 local function issKeyVal( k, v, s )
     if s == nil then s = {} end
     s["key"] = tostring(k)
@@ -674,10 +682,12 @@ end
 function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
     D("plugin_requestHandler(%1,%2,%3)", lul_request, lul_parameters, lul_outputformat)
     local action = lul_parameters['action'] or lul_parameters['command'] or ""
+    local deviceNum = tonumber( lul_parameters['device'], 10 ) or luup.device
     if action == "debug" then
-        debugMode = not debugMode
-        return "Debug is now " .. tostring(debugMode), "text/plain"
+        local err,msg,job,args = luup.call_action( MYSID, "SetDebug", { debug=1 }, deviceNum )
+        return string.format("Device #%s result: %s, %s, %s, %s", tostring(deviceNum), tostring(err), tostring(msg), tostring(job), dump(args))
     end
+
     if action:sub( 1, 3 ) == "ISS" then
         -- ImperiHome ISS Standard System API, see http://dev.evertygo.com/api/iss#types
         local dkjson = require('dkjson')
@@ -706,10 +716,10 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
                     table.insert( issinfo, issKeyVal( "maxVal", sysTemps.maximum ) )
                     table.insert( issinfo, issKeyVal( "availablemodes", "Off,Heat,Cool,Auto,Fan,Dry" ) )
                     table.insert( issinfo, issKeyVal( "availablefanmodes", "Auto" ) )
+                    table.insert( issinfo, issKeyVal( "defaultIcon", "https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png" ) )
                     local dev = { id=tostring(lnum), 
                         name=ldev.description or ("#" .. lnum), 
                         ["type"]="DevThermostat", 
-                        defaultIcon="https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
                         params=issinfo }
                     if ldev.room_num ~= nil and ldev.room_num ~= 0 then dev.room = tostring(ldev.room_num) end
                     table.insert( devices, dev )
