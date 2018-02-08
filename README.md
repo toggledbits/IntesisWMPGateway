@@ -199,7 +199,7 @@ To connect Intesis WMP Gateway to ImperiHome:
 1. Click **Add a new object**
 1. Choose **ImperiHome Standard System**
 1. In the **Local base API** field, enter 
-   `http://your-vera-local-ip:3480/data_request?id=lr_IntesisWMPGateway&command=ISS&path=`
+   `http://your-vera-local-ip/port_3480/data_request?id=lr_IntesisWMPGateway&command=ISS`
 1. Click **Next** to connect.
 
 ImperiHome should then populate your groups with your Intesis WMP Gateway plugin devices.
