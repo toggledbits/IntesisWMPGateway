@@ -5,6 +5,11 @@
         <minor>0</minor>
     </specVersion>
     <serviceStateTable>
+        <stateVariable sendEvents="yes">
+            <name>Failure</name>
+            <dataType>ui1</dataType>
+            <defaultValue>0</defaultValue>
+        </stateVariable>
         <stateVariable sendEvents="no">
             <name>Name</name>
             <dataType>string</dataType>
