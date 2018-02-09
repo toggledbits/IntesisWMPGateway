@@ -866,6 +866,13 @@ function deviceTick( dargs )
         end
     end
     
+    -- OK?
+    if devData[dev].isConnected then
+        luup.variable_set( DEVICESID, "Failure", 0, dev )
+    else
+        luup.variable_set( DEVICESID, "Failure", 1, dev )
+    end
+    
     -- Arm for another query.
     assert( nextDelay > 0 )
     D("deviceTick() arming for next tick in %1", nextDelay)
@@ -885,6 +892,7 @@ local function deviceRunOnce( dev, parentDev )
         luup.variable_set(DEVICESID, "DisplayTemperature", "--.-", dev)
         luup.variable_set(DEVICESID, "DisplayStatus", "", dev)
         luup.variable_set(DEVICESID, "ConfigurationUnits", "C", dev)
+        luup.variable_set(DEVICESID, "Failure", 0, dev )
         -- Don't mess with IntesisID
         luup.variable_set(DEVICESID, "IntesisONOFF", "", dev)
         luup.variable_set(DEVICESID, "IntesisMODE", "", dev)
@@ -1510,8 +1518,11 @@ function plugin_init(dev)
     end
     local cn 
     for _,cn in ipairs( children ) do
+        L("Starting device %1 (%2)", cn, luup.devices[cn].description)
+        luup.variable_set( DEVICESID, "Failure", 0, cn ) -- IUPG
         local ok, err = pcall( deviceStart, cn, dev )
         if not ok then
+            luup.variable_set( DEVICESID, "Failure", 1, cn )
             L("Device %1 (%2) failed to start, %3", cn, luup.devices[cn].description, err)
             gatewayStatus( "Device(s) failed to start!", dev )
         end
