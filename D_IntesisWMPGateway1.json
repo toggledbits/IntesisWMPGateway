@@ -1,0 +1,449 @@
+{
+	"default_icon": "https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
+	"state_icons": [ ],
+	"x": "2",
+	"y": "4",
+	"inScene": "1",
+	"Tabs": [{
+			"Label": {
+				"lang_tag": "tabname_control",
+				"text": "Control"
+			},
+			"Position": "0",
+			"TabType": "flash",
+            "top_navigation_tab": 1,
+			"ControlGroup": [{
+					"id": "1",
+					"scenegroup": "1"
+				},
+				{
+					"id": "2",
+					"scenegroup": "2"
+				},
+				{
+					"id": "3",
+					"scenegroup": "3"
+				},
+				{
+					"id": "4",
+					"scenegroup": "4"
+				}
+			],
+			"SceneGroup": [{
+					"id": "1",
+					"top": "0",
+					"left": "0",
+					"x": "1",
+					"y": "4"
+				},
+				{
+					"id": "2",
+					"top": "0",
+					"left": "2",
+					"x": "0.5",
+					"y": "3"
+				},
+				{
+					"id": "3",
+					"top": "0",
+					"left": "2.5",
+					"x": "0.5",
+					"y": "3"
+				},
+				{
+					"id": "4",
+					"top": "3",
+					"left": "2",
+					"x": "1",
+					"y": "1"
+				}
+			],
+			"Control": [
+				{
+					"ControlGroup": "1",
+					"ControlType": "variable",
+					"top": "0.5",
+					"left": "0",
+					"LabelSymbol": {
+						"lang_tag": "wmp_status",
+						"text": "Status"
+					},
+					"Display": {
+						"Top": 0,
+						"Left": 0,
+						"Width": 320,
+						"Height": 25,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Variable": "DisplayStatus"
+					},
+					"ControlCode": "wmp_status"
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_wmp_discovery",
+						"text": "Run Discovery"
+					},
+					"Display": {
+						"Top": 30,
+						"Left": 0,
+						"Width": 120,
+						"Height": 25
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "RunDiscovery",
+						"Parameters": []
+					},
+					"ControlCode": "run_discovery"
+				},
+				{
+					"ControlType": "label",
+					"top": "0.2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "wmp_ex_discovery",
+						"text": "This form of discovery uses a network broadcast to try to find all compatible Intesis devices in your local network. Try this first."
+					},
+					"Display": {
+						"Top": 30,
+						"Left": 150,
+						"Width": 480,
+						"Height": 75
+					}
+				},
+
+                {
+                    "ControlType": "input",
+                    "ID": "macaddr",
+                    "Display": {
+                        "Top": 90,
+                        "Left": 0,
+                        "Width": 120,
+                        "Height": 24
+                    }
+                },
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_wmp_discmac",
+						"text": "Discover MAC"
+					},
+					"Display": {
+						"Top": 90,
+						"Left": 150,
+						"Width": 120,
+						"Height": 25
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "DiscoverMAC",
+						"Parameters": [{
+                            "Name": "MACAddress",
+                            "ID": "macaddr"
+                        }]
+					},
+					"ControlCode": "run_discmac"
+				},
+				{
+					"ControlType": "label",
+					"top": "0.2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "wmp_ex_discmac",
+						"text": "If the broadcast discovery doesn't find your device, enter its MAC address here and press \"Discover MAC\". The MAC address can be found on the label on the back of the device, often under a barcode."
+					},
+					"Display": {
+						"Top": 120,
+						"Left": 0,
+						"Width": 630,
+						"Height": 48
+					}
+				},
+                
+                {
+                    "ControlType": "input",
+                    "ID": "ipaddr",
+                    "Display": {
+                        "Top": 180,
+                        "Left": 0,
+                        "Width": 120,
+                        "Height": 24
+                    }
+                },
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_wmp_discip",
+						"text": "Discover IP"
+					},
+					"Display": {
+						"Top": 180,
+						"Left": 150,
+						"Width": 120,
+						"Height": 25
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Action": "DiscoverIP",
+						"Parameters": [{
+                            "Name": "IPAddress",
+                            "ID": "ipaddr"
+                        }]
+					},
+					"ControlCode": "run_discip"
+				},
+				{
+					"ControlType": "label",
+					"top": "0.2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "wmp_ex_discip",
+						"text": "If your Intesis device has a fixed IP address (for example, via a DHCP reservation), enter its IP address here and press \"Discover IP\"."
+					},
+					"Display": {
+						"Top": 210,
+						"Left": 0,
+						"Width": 630,
+						"Height": 48
+					}
+				},
+                
+                
+				{
+					"ControlType": "label",
+					"top": "0.2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "wmp_gw_about",
+						"text": "<b>Important!</b> Your IntesisBox device(s) must be powered on and connected to your network for any of these forms of discovery to work. If discovery is not finding your device, power-cycle the device and try again. If it still fails, your device may not be compatible with this plugin.<br/>&nbsp;<br/>Intesis WMP Gateway Plugin ver 2.0 &#169; Patrick H. Rigney, All Rights Reserved. Docs and license at <a href=\"http://www.toggledbits.com/intesis\" target=\"_blank\">https://www.toggledbits.com/intesis</a>. Please consider <a href=\"https://www.makersupport.com/toggledbits\" target=\"_blank\">making a donation</a> for ongoing support of this project."
+					},
+					"Display": {
+						"Top": 260,
+						"Left": 0,
+						"Width": 630,
+						"Height": 96
+					}
+				}
+			],
+			"Conditions": []
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_advanced",
+				"text": "Advanced"
+			},
+			"Position": "1",
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "advanced_device"
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_logs",
+				"text": "Logs"
+			},
+			"Position": "2",
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "device_logs"
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_notifications",
+				"text": "Notifications"
+			},
+			"Position": "3",
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "device_notifications"
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_device_scenes",
+				"text": "Scenes"
+			},
+			"Position": "4",
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "device_scenes"
+		}
+	],
+	"eventList2": [{
+			"id": 1,
+			"label": {
+				"lang_tag": "thermostat_mode_changes",
+				"text": "Thermostat Mode Changes"
+			},
+			"serviceId": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "string",
+				"defaultValue": "",
+				"allowedValueList": [{
+						"Off": "Off",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_turned_off",
+							"text": "_DEVICE_NAME_ is turned off"
+						}
+					},
+					{
+						"Cool": "CoolOn",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_cool",
+							"text": "_DEVICE_NAME_ mode changed to cool"
+						}
+					},
+					{
+						"Heat": "HeatOn",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_heat",
+							"text": "_DEVICE_NAME_ mode changed to heat"
+						}
+					},
+					{
+						"Auto": "AutoChangeOver",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_auto",
+							"text": "_DEVICE_NAME_ mode changed to auto"
+						}
+					},
+					{
+						"Fan": "FanOnly",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_fanonly",
+							"text": "_DEVICE_NAME_ mode changed to fan only"
+						}
+					},
+					{
+						"Dry": "Dry",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_dry",
+							"text": "_DEVICE_NAME_ mode changed to dry"
+						}
+					}
+				],
+				"name": "ModeTarget",
+				"comparisson": "=",
+				"prefix": {
+					"lang_tag": "mode",
+					"text": "Mode"
+				},
+				"suffix": {}
+			}]
+		},
+		{
+			"id": 2,
+			"label": {
+				"lang_tag": "ambient_temperature_goes_above",
+				"text": "Ambient temperature goes above"
+			},
+			"serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
+			"norepeat": "1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentTemperature",
+				"comparisson": ">",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "hft_ambient_temperature_goes_above",
+					"text": "_DEVICE_NAME_ ambient temperature goes above _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 3,
+			"label": {
+				"lang_tag": "ambient_temperature_goes_below",
+				"text": "Ambient temperature goes below"
+			},
+			"serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
+			"norepeat": "1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentTemperature",
+				"comparisson": "<",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "hft_ambient_temperature_goes_below",
+					"text": "_DEVICE_NAME_ ambient temperature goes below _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 4,
+			"label": {
+				"lang_tag": "thermostat_setpoint_goes_above",
+				"text": "Thermostat setpoint goes above"
+			},
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentSetpoint",
+				"comparisson": ">",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "tb_wmp_setpoint_above",
+					"text": "_DEVICE_NAME_ setpoint goes above _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 5,
+			"label": {
+				"lang_tag": "thermostat_setpoint_goes_below",
+				"text": "Thermostat setpoint goes below"
+			},
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentSetpoint",
+				"comparisson": "<",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "tb_wmp_setpoint_below",
+					"text": "_DEVICE_NAME_ setpoint goes below _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		}
+	],
+	"device_type": "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1"
+}

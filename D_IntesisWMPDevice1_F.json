@@ -311,13 +311,13 @@
                     },
                     "LabelSymbol": {
                         "lang_tag": "heater_label_symbol",
-                        "text": "&deg;C"
+                        "text": "&deg;F"
                     },
 					"Display": {
 						"Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
 						"Variable": "CurrentSetpoint",
-						"MinValue": 16,
-						"MaxValue": 32,
+						"MinValue": 60,
+						"MaxValue": 90,
                         "Step": 0.5,
                         "Editable": 1,
 						"Top": 0,
@@ -360,7 +360,7 @@
 						"Left": 120,
 						"Width": 120,
 						"Height": 25,
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Variable": "IntesisFANSP"
 					},
 					"ControlCode": "hvac_fanstate"
@@ -378,12 +378,12 @@
 						"Left": 50,
 						"Width": 60,
 						"Height": 20,
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Variable": "IntesisFANSP",
 						"Value": "AUTO"
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "SetCurrentFanSpeed",
 						"Parameters": [{
 							"Name": "NewFanSpeed",
@@ -407,7 +407,7 @@
 						"Height": 20
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "FanSpeedDown",
 						"Parameters": []
 					},
@@ -428,7 +428,7 @@
 						"Height": 20
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "FanSpeedUp",
 						"Parameters": []
 					},
@@ -448,7 +448,7 @@
 						"Left": 30,
 						"Width": 100,
 						"Height": 25,
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Variable": "DisplayTemperature"
 					},
 					"ControlCode": "wmp_temp"
@@ -471,7 +471,7 @@
 						"Left": 150,
 						"Width": 320,
 						"Height": 25,
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Variable": "DisplayStatus"
 					},
 					"ControlCode": "wmp_status"
@@ -513,7 +513,7 @@
 						"Height": 20
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "VaneUp",
 						"Parameters": []
 					},
@@ -534,7 +534,7 @@
 						"Height": 20
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "VaneLeft",
 						"Parameters": []
 					},
@@ -555,7 +555,7 @@
 						"Height": 20
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "VaneRight",
 						"Parameters": []
 					},
@@ -576,7 +576,7 @@
 						"Height": 20
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "VaneDown",
 						"Parameters": []
 					},
@@ -595,13 +595,13 @@
 						"Left": 250,
 						"Width": 60,
 						"Height": 20,
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Variable": "IntesisVANEUD",
 						"Value": "AUTO"
 
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "SetUpDownVanePosition",
 						"Parameters": [{
                             "Name": "NewPosition",
@@ -623,12 +623,12 @@
 						"Left": 320,
 						"Width": 60,
 						"Height": 20,
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Variable": "IntesisVANELR",
 						"Value": "AUTO"
 					},
 					"Command": {
-						"Service": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "SetLeftRightVanePosition",
 						"Parameters": [{
                             "Name": "NewPosition",
@@ -824,7 +824,7 @@
 				"lang_tag": "thermostat_setpoint_goes_above",
 				"text": "Thermostat setpoint goes above"
 			},
-			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 			"argumentList": [{
 				"id": 1,
 				"dataType": "i4",
@@ -850,7 +850,7 @@
 				"lang_tag": "thermostat_setpoint_goes_below",
 				"text": "Thermostat setpoint goes below"
 			},
-			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPGateway1",
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 			"argumentList": [{
 				"id": 1,
 				"dataType": "i4",
@@ -871,5 +871,5 @@
 			}]
 		}
 	],
-	"device_type": "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1"
+	"device_type": "urn:schemas-toggledbits-com:device:IntesisWMPDevice:1"
 }
