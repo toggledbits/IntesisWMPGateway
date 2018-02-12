@@ -57,7 +57,7 @@ local _PLUGIN_VERSION = "2.0"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 020000
 
-local debugMode = true
+local debugMode = false
 local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -132,8 +132,10 @@ end
 
 local function L(msg, ...)
     local str
+    local level = nil
     if type(msg) == "table" then
         str = msg["prefix"] .. msg["msg"]
+        level = msg["level"]
     else
         str = _PLUGIN_NAME .. ": " .. msg
     end
@@ -155,7 +157,7 @@ local function L(msg, ...)
             return tostring(val)
         end
     )
-    luup.log(str)
+    luup.log(str, level)
     -- if traceMode then trace('log',str) end
 end
 
@@ -236,21 +238,17 @@ end
 local function getSystemIP4BCast( dev )
     local vera_ip = getSystemIP4Addr( dev )
     local mask = getSystemIP4Mask( dev )
-    L("System IP is %1, netmask %2", vera_ip, mask)
+    D("getSystemIP4BCast() sys ip %1 netmask %2", vera_ip, mask)
     local a1,a2,a3,a4 = vera_ip:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)")
     local m1,m2,m3,m4 = mask:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)")
     local bit = require("bit")
-    local a1 = bit.band(a1,m1)
-    local a2 = bit.band(a2,m2)
-    local a3 = bit.band(a3,m3)
-    local a4 = bit.band(a4,m4)
-    D("Network address is %1.%2.%3.%4", a1, a2, a3, a4)
-    a1 = bit.bor(a1,bit.bxor(m1,255))
-    a2 = bit.bor(a2,bit.bxor(m2,255))
-    a3 = bit.bor(a3,bit.bxor(m3,255))
-    a4 = bit.bor(a4,bit.bxor(m4,255))
+    -- Yeah. This is my jam, baby!
+    a1 = bit.bor(bit.band(a1,m1), bit.bxor(m1,255))
+    a2 = bit.bor(bit.band(a2,m1), bit.bxor(m2,255))
+    a3 = bit.bor(bit.band(a3,m3), bit.bxor(m3,255))
+    a4 = bit.bor(bit.band(a4,m4), bit.bxor(m4,255))
     local broadcast = string.format("%d.%d.%d.%d", a1, a2, a3, a4)
-    L("Computed broadcast address is %1", broadcast)
+    D("getSystemIP4BCast() computed broadcast address is %1", broadcast)
     return broadcast
 end
 
@@ -335,13 +333,9 @@ local function findDeviceByMAC( mac, parentDev )
     if devicesByMAC[mac] ~= nil then return devicesByMAC[mac], luup.devices[devicesByMAC[mac]] end
     -- No, look for it.
     for n,d in pairs(luup.devices) do
-        D("findDeviceByMac() checking %1 type %2 parent %3 id %4", n, d.device_type, d.device_num_parent, d.id)
-        if d.device_type == DEVICETYPE and d.device_num_parent == parentDev then
-            D("findDeviceByMAC() checking %1 (#%2)", d.id, n)
-            if mac == d.id then
+        if d.device_type == DEVICETYPE and d.device_num_parent == parentDev and mac == d.id then
             devicesByMAC[mac] = n
             return n,d
-            end
         end
     end
     return nil
@@ -415,6 +409,7 @@ local function deviceConnectTCP( dev )
                 else
                     -- Good connect! Store new address.
                     luup.attr_set( "ip", newIP, dev )
+                    ip = newIP
                     -- drop through
                 end
             else
@@ -432,7 +427,7 @@ local function deviceConnectTCP( dev )
     sock:settimeout( 1, "r" )
     devData[dev].sock = sock
     devData[dev].isConnected = true
-    D("deviceConnectTCP() socket connected and ready")
+    L("Successful connection to %1 for %2 (%3)", ip, dev, luup.devices[dev].description)
     return true
 end
 
@@ -474,7 +469,7 @@ local function sendCommand( cmdString, dev )
 end
 
 -- Handle an ID response
--- Ex. ID:IS-IR-WMP-1,001DC9A183E1,192.168.0.177,ASCII,v1.0.5,-51,TEST,N
+-- Ex. ID:IS-IR-WMP-1,001122334455,192.168.0.177,ASCII,v1.0.5,-51,TEST,N
 local function handleID( unit, segs, pdev )
     D("handleID(%1,%2,%3)", unit, segs, pdev)
     local args
@@ -1017,9 +1012,7 @@ local function deviceStart( dev, parentDev )
     luup.variable_watch( "intesisVarChanged", TEMPSENS_SID, "CurrentTemperature", dev )
 
     -- Schedule first tick on this device.
-    D("plugin_init() device %1 started, starting device tick...", cn)  
     runStamp[dev] = os.time() - math.random(1, 100000)
-    D("is %1 == %2 ?", intesisDeviceTick, deviceTick)
     luup.call_delay( "intesisDeviceTick", dev % 10, table.concat( { dev, runStamp[dev], "" }, ":" )) -- must provide 3 dargs
 
     -- Log in? Later. --
@@ -1038,7 +1031,6 @@ local function discoveryByMAC( mac, dev )
     gatewayStatus( "Searching for " .. mac, dev )
     local newIP, newMAC = getIPforMAC( mac, dev )
     if newIP == nil then
-        L("No device found for MAC %1 IP %2. Check MAC address, or try using static IP addressing for this device.", mac, ipaddr)
         gatewayStatus( "Device not found with MAC " .. mac, dev )
         return false
     end
@@ -1063,7 +1055,6 @@ local function discoveryByIP( ipaddr, dev )
             L("IP discovery was unable to determine MAC address, but device is connectible. Proceeding with empty MAC.")
             newMAC = "000000000000"
         else
-            L("No device found or connectible for IP %1.", ipaddr)
             gatewayStatus( "Device not found at IP " .. ipaddr , dev )
             return false
         end
@@ -1091,7 +1082,6 @@ function discoveryTick( dargs )
     if udp ~= nil then
         repeat
             udp:settimeout(1)
-            D("discoveryTick() fetching data...")
             local resp, peer, port = udp:receivefrom()
             if resp ~= nil then
                 D("discoveryTick() received response from %1:%2", peer, port)
@@ -1131,7 +1121,7 @@ local function launchDiscovery( dev )
     assert(udp:setoption('broadcast', true))
     assert(udp:setoption('dontroute', true))
     assert(udp:setsockname('*', port))
-    D("Sending discovery request to %1:%2", broadcast, port)
+    D("launchDiscovery() sending discovery request to %1:%2", broadcast, port)
     local stat,err = udp:sendto( "DISCOVER\r\n", broadcast, port)
     if stat == nil then
         L("Failed to send broadcast: %1", err)
@@ -1464,14 +1454,10 @@ local function plugin_runOnce(dev)
     return true -- indicate to caller we should keep going
 end
 
-function plugin_tick( dargs )
-    D("plugin_tick(%1)", dargs)
-end
-
 -- Start-up initialization for plug-in.
 function plugin_init(dev)
     D("plugin_init(%1)", dev)
-    L("starting version %1 for device %2 WMP Gateway", _PLUGIN_VERSION, dev )
+    L("starting version %1 for device %2 gateway", _PLUGIN_VERSION, dev )
     
     -- Up front inits
     devData[dev] = {}
