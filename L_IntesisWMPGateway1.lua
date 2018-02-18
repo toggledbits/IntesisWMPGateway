@@ -132,10 +132,10 @@ end
 
 local function L(msg, ...)
     local str
-    local level = nil
+    local level = 50
     if type(msg) == "table" then
         str = msg["prefix"] .. msg["msg"]
-        level = msg["level"]
+        level = msg["level"] or level
     else
         str = _PLUGIN_NAME .. ": " .. msg
     end
@@ -261,6 +261,7 @@ local function scanARP( dev, mac, ipaddr )
     p:close()
     local newIP = nil
     local newMAC = nil
+    local res = {}
     m:gsub("([^\r\n]+)", function( t )
             local p = { t:match("^([^%s]+)%s+([^%s]+)%s+([^%s]+)%s+([^%s]+)%s+(.*)$") }
             D("scanARP() handling line %1, data %2", t, p)
@@ -268,20 +269,18 @@ local function scanARP( dev, mac, ipaddr )
                 local mm = p[4]:gsub("[:-]", ""):upper() -- clean MAC
                 if ( mac or "" ) ~= "" then
                     if mm == mac then
-                        newIP = p[1]
-                        newMAC = mac
+                        table.insert( res, { mac=mac, ip=p[1] } )
                     end
                 elseif ( ipaddr or "" ) ~= "" then
                     if ipaddr == p[1] and mm ~= "000000000000" then
-                        newIP = ipaddr
-                        newMAC = mm
+                        table.insert( res, { mac=mm, ip=ipaddr } )
                     end
                 end
             end
             return ""
         end
     )
-    return newIP, newMAC
+    return res
 end
 
 -- Try to resolve a MAC address to an IP address. We do with with a broadcast ping
@@ -291,7 +290,7 @@ local function getIPforMAC( mac, dev )
     assert(not isOpenLuup, "We don't know how to do this on openLuup, yet.")
     mac = mac:gsub("[%s:-]", ""):upper()
     local broadcast = getSystemIP4BCast( dev )
-    os.execute("/bin/ping -4 -q -c 3 " .. broadcast)
+    os.execute("/bin/ping -4 -q -c 3 -w 1 " .. broadcast)
     return scanARP( dev, mac, nil )
 end
 
@@ -367,6 +366,14 @@ local function closeSocket( dev )
     end
 end
 
+local function configureSocket( sock, dev )
+    -- Keep timeout shorts so problems don't cause watchdog restarts.
+    sock:settimeout( 1, "b" )
+    sock:settimeout( 1, "r" )
+    devData[dev].sock = sock
+    devData[dev].isConnected = true
+end
+
 -- Open TCP connection to IntesisBox device
 local function deviceConnectTCP( dev )
     D("deviceConnectTCP(%1)", dev)
@@ -375,43 +382,46 @@ local function deviceConnectTCP( dev )
     if devData[dev].isConnected == true and devData[dev].sock ~= nil then return true end
 
     local ip = luup.attr_get( "ip", dev ) or ""
-    if ip == "" then 
-        -- Try to look up IP address
-        D("deviceConnectTCP() looking for IP for %1", luup.devices[dev].id)
-        ip = getIPforMAC( luup.devices[dev].id, dev )
-        if ip == nil then
-            D("deviceConnectTCP() device %1 (%2) no IP address, can't connect/send", dev, luup.devices[dev].description)
-            return false
-        end
-        luup.attr_set( "ip", ip, dev )
-    end
     local port = getVarNumeric( "TCPPort", 3310, dev, DEVICESID )
     D("deviceConnectTCP() connecting to %1:%2...", ip, port )
-    local sock, err
-    sock, err = socket.tcp()
+    local sock, err = socket.tcp()
     if sock then
-        sock:settimeout( 5, "b" )
-        sock:settimeout( 5, "r" )
-        local status, err = sock:connect( ip, port )
+        sock:settimeout( 1, "b" )
+        sock:settimeout( 1, "r" )
+        local status, err 
+        if ip ~= "" then
+            status, err = sock:connect( ip, port )
+        else
+            status, err = false, "IP not configured"
+        end
         if not status then 
             L("Can't open %1 (%2) at %3:%4, %5", dev, luup.devices[dev].description, ip, port, err)
             devData[dev].isConnected = false
             
             -- See if IP address has changed
             D("deviceConnectTCP() see if IP address changed")
-            local newIP = getIPforMAC( luup.devices[dev].id, dev )
-            if newIP ~= nil and newIP ~= ip then
-                L("IP address for %1 (%2) has changed, was %3, now %4, retrying connection...", dev, luup.devices[dev].description, ip, newIP)
-                sock = socket.tcp() -- get a new socket
-                status, err = sock:connect( newIP, port )
-                if not status then
-                    return false -- still no good, just return.
-                else
-                    -- Good connect! Store new address.
-                    luup.attr_set( "ip", newIP, dev )
-                    ip = newIP
-                    -- drop through
+            local newIPs = getIPforMAC( luup.devices[dev].id, dev )
+            if newIPs ~= nil then
+                local newIP
+                for _,newIP in ipairs( newIPs ) do
+                    if newIP.ip ~= ip then -- don't try what already failed
+                        D("deviceConnectTCP() attempting connect to %1:%2", newIP.ip, port)
+                        sock = socket.tcp() -- get a new socket
+                        sock:settimeout( 1, "b" )
+                        sock:settimeout( 1, "r" )
+                        status, err = sock:connect( newIP.ip, port )
+                        if status then
+                            -- Good connect! Store new address.
+                            L("IP address for %1 (%2) has changed, was %3, now %4", dev, luup.devices[dev].description, ip, newIP.ip)
+                            luup.attr_set( "ip", newIP.ip, dev )
+                            ip = newIP.ip
+                            configureSocket( sock, dev )
+                            return true
+                        end
+                    end
                 end
+                -- None of these IPs worked, or, one did... how do we know...
+                return false
             else
                 return false
             end
@@ -422,12 +432,8 @@ local function deviceConnectTCP( dev )
         return false
     end
 
-    -- Keep timeout shorts so problems don't cause watchdog restarts.
-    sock:settimeout( 1, "b" )
-    sock:settimeout( 1, "r" )
-    devData[dev].sock = sock
-    devData[dev].isConnected = true
     L("Successful connection to %1 for %2 (%3)", ip, dev, luup.devices[dev].description)
+    configureSocket( sock, dev )
     return true
 end
 
@@ -1029,21 +1035,22 @@ end
 local function discoveryByMAC( mac, dev )
     D("discoveryByMAC(%1,%2)", mac, dev)
     gatewayStatus( "Searching for " .. mac, dev )
-    local newIP, newMAC = getIPforMAC( mac, dev )
-    if newIP == nil then
+    local res = getIPforMAC( mac, dev )
+    if res == nil then
         gatewayStatus( "Device not found with MAC " .. mac, dev )
         return false
     end
-    D("discoveryByMAC() found IP %1 for MAC %2", newIP, newMAC)
-    passGenericDiscovery( newMAC, newIP, dev )
+    local first = res[1]
+    D("discoveryByMAC() found IP %1 for MAC %2", first.ip, first.mac)
+    passGenericDiscovery( first.mac, first.ip, dev )
 end
 
 -- Try to ping the device, and then find its MAC address in the ARP table.
 local function discoveryByIP( ipaddr, dev )
     D("discoveryByIP(%1,%2)", ipaddr, dev)
     gatewayStatus( "Searching for " .. ipaddr, dev )
-    local newIP, newMAC = getMACforIP( ipaddr, dev )
-    if newMAC == nil then
+    local res = getMACforIP( ipaddr, dev )
+    if res == nil then
         -- Last-ditch effort, hard connect to port 3310? We're probably OK if successful.
         D("discoveryByIP() no MAC address found, trying direct connection")
         local sock = socket.tcp()
@@ -1059,8 +1066,9 @@ local function discoveryByIP( ipaddr, dev )
             return false
         end
     end
-    D("discoveryByIP() found MAC %1 for IP %2", newMAC, newIP)
-    passGenericDiscovery( newMAC, newIP, dev )
+    local first = res[1]
+    D("discoveryByIP() found MAC %1 for IP %2", first.mac, first.ip)
+    passGenericDiscovery( first.mac, first.ip, dev )
 end
     
 -- Tick for UDP discovery.
