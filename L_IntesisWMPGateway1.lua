@@ -57,7 +57,7 @@ local _PLUGIN_VERSION = "2.0"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 020000
 
-local debugMode = false
+local debugMode = true
 local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -401,6 +401,7 @@ local function deviceConnectTCP( dev )
             -- See if IP address has changed
             D("deviceConnectTCP() see if IP address changed")
             local newIPs = getIPforMAC( luup.devices[dev].id, dev )
+            D("deviceConnectTCP() newIPs=%1", newIPs)
             if newIPs ~= nil then
                 local newIP
                 for _,newIP in ipairs( newIPs ) do
@@ -418,6 +419,7 @@ local function deviceConnectTCP( dev )
                             configureSocket( sock, dev )
                             return true
                         end
+                        D("deviceConnectTCP() failed on %1, %2", newIP.ip, err)
                     end
                 end
                 -- None of these IPs worked, or, one did... how do we know...
@@ -824,6 +826,7 @@ function deviceTick( dargs )
         D("deviceTick() peer is not connected, trying to reconnect...")
         if sendCommand("ID", dev) then
             nextDelay = 1
+            sendCommand("INFO", dev)
         else
             D("deviceTick() can't connect peer, waiting...")
             nextDelay = 60 -- wait a good while before trying again.
@@ -1023,9 +1026,9 @@ local function deviceStart( dev, parentDev )
 
     -- Log in? Later. --
 
-    -- Send some initial requests for data...
-    sendCommand( "ID", dev )
-    sendCommand( "INFO", dev )
+    -- Send some initial requests for data... NB: deadlock when we try these. Let the timer task catch us up.
+    -- sendCommand( "ID", dev )
+    -- sendCommand( "INFO", dev )
 
     L("Device %1 started!", dev)
     luup.set_failure( 0, dev )
