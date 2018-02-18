@@ -188,6 +188,10 @@ respectively.
 Note that this variable is not automatically created with the device. You will need to create it using the "Create Service" tab in the
 device's Advanced settings page. The service name is (copy-paste recommended) `urn:toggledbits-com:serviceId:IntesisWMPGateway1`.
 
+### IntesisERRSTATUS and IntesisERRCODE ###
+
+The plugin will store the values of any ERRSTATUS and ERRCODE reports from the gateway device. Because the meaning of these codes varies from device to device, the plugin does not act on them, but since they are stored, user-provided scripts could interpret the values and react using specific knowledge of the air handling unit installed.
+
 ## ImperiHome Integration ##
 
 ImperiHome does not, by default, detect many plugin devices, including ImperiHome WMP Gateway. However, it is possible to configure this plugin
