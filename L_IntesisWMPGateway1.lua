@@ -44,7 +44,6 @@
        only assume that the commands are received and obeyed).
 
 --]]
-if luup == nil then luup = {} end -- for lint/check
 
 module("L_IntesisWMPGateway1", package.seeall)
 
@@ -102,10 +101,10 @@ local isOpenLuup = false
 
 local function dump(t)
     if t == nil then return "nil" end
-    local k,v,str,val
     local sep = ""
     local str = "{ "
     for k,v in pairs(t) do
+        local val
         if type(v) == "table" then
             val = dump(v)
         elseif type(v) == "function" then
@@ -213,11 +212,6 @@ local function CtoF( temp )
     return ( temp * 9 / 5 ) + 32
 end
 
-local function max( a, b )
-    if a > b then return a end
-    return b
-end
-
 -- Query UCI for WAN IP4 IP
 local function getSystemIP4Addr( dev )
     local p = io.popen("/sbin/uci -P /var/state get network.wan.ipaddr")
@@ -256,11 +250,9 @@ local function scanARP( dev, mac, ipaddr )
     D("scanARP(%1,%2,%3) luup.device=%4", dev, mac, ipaddr, luup.device)
     
     -- Vera arp is a function defined in /etc/profile (currently). ??? Needs some flexibility here.
-    local p = io.popen("cat /proc/net/arp")
-    local m = p:read("*a")
-    p:close()
-    local newIP = nil
-    local newMAC = nil
+    local pipe = io.popen("cat /proc/net/arp")
+    local m = pipe:read("*a")
+    pipe:close()
     local res = {}
     m:gsub("([^\r\n]+)", function( t )
             local p = { t:match("^([^%s]+)%s+([^%s]+)%s+([^%s]+)%s+([^%s]+)%s+(.*)$") }
@@ -326,7 +318,6 @@ end
 -- Find WMP device by MAC address
 local function findDeviceByMAC( mac, parentDev )
     D("findDeviceByMAC(%1,%2)", mac, parentDev)
-    local n,d 
     mac = (mac or ""):upper()
     -- Cached?
     if devicesByMAC[mac] ~= nil then return devicesByMAC[mac], luup.devices[devicesByMAC[mac]] end
@@ -342,7 +333,6 @@ end
 
 -- Return an array of the Luup device numbers of all child WMP devices of parent
 local function inventoryChildren( parentDev )
-    local n, d
     local children = {}
     for n,d in pairs( luup.devices ) do
         if d.device_type == DEVICETYPE and d.device_num_parent == parentDev then
@@ -388,7 +378,7 @@ local function deviceConnectTCP( dev )
     if sock then
         sock:settimeout( 1, "b" )
         sock:settimeout( 1, "r" )
-        local status, err 
+        local status
         if ip ~= "" then
             status, err = sock:connect( ip, port )
         else
@@ -403,7 +393,6 @@ local function deviceConnectTCP( dev )
             local newIPs = getIPforMAC( luup.devices[dev].id, dev )
             D("deviceConnectTCP() newIPs=%1", newIPs)
             if newIPs ~= nil then
-                local newIP
                 for _,newIP in ipairs( newIPs ) do
                     if newIP.ip ~= ip then -- don't try what already failed
                         D("deviceConnectTCP() attempting connect to %1:%2", newIP.ip, port)
@@ -415,7 +404,6 @@ local function deviceConnectTCP( dev )
                             -- Good connect! Store new address.
                             L("IP address for %1 (%2) has changed, was %3, now %4", dev, luup.devices[dev].description, ip, newIP.ip)
                             luup.attr_set( "ip", newIP.ip, dev )
-                            ip = newIP.ip
                             configureSocket( sock, dev )
                             return true
                         end
@@ -467,7 +455,7 @@ local function sendCommand( cmdString, dev )
     elseif err == "closed" then
         D("sendCommand() peer closed connection")
     else
-        D("sendCommand() socket.send returned %1, closing/restarting", status)
+        D("sendCommand() socket.send returned %1, closing/restarting", err)
     end
 
     -- Close connection, will retry later.    
@@ -498,8 +486,8 @@ end
 -- Ex: CHN,1:MODE,COOL
 local function handleCHN( unit, segs, pdev )
     D("handleCHN(%1,%2,%3)", unit, segs, pdev)
-    local args, nArgs
-    args, nArgs = split( string.upper( segs[2] ), "," )
+    local args
+    args = split( string.upper( segs[2] ), "," )
     if args[1] == "ONOFF" then
         -- The on/off state is separate from mode in Intesis, but part of mode in the
         --   HVAC_UserOperatingMode1 service. See comments below on how we handle that.
@@ -520,11 +508,11 @@ local function handleCHN( unit, segs, pdev )
                 luup.variable_set( FANMODE_SID, "FanStatus", "Unknown", pdev )
             end
         else
-            L("Invalid ONOFF state from device %1 in %2", args[2], msg)
+            L("Invalid ONOFF state from device %1 in %2", args[2], segs)
         end
     elseif args[1] == "MODE" then
         if args[2] == nil then
-            L("Malformed CHN segment %2 function data missing in %3", args[1], msg)
+            L("Malformed CHN segment %2 function data missing in %3", args[1], segs)
             return
         end
         -- Store this for use by others, just to have available
@@ -600,7 +588,7 @@ local function handleCHN( unit, segs, pdev )
         -- Values are dependent on the connected device. Track.
         luup.variable_set( DEVICESID, "IntesisERRCODE", args[2] or "", pdev )
     else
-        D("handleCHN() unhandled function %1 in %2", args[1], msg)
+        D("handleCHN() unhandled function %1 in %2", args[1], segs)
     end
 end
 
@@ -627,7 +615,7 @@ function handleCLOSE( unit, segs, pdev )
     D("handleCLOSE(%1,%2,%3)", unit, segs, pdev)
     L("DEVICE IS CLOSING CONNECTION!")
     -- luup.set_failure( 1, pdev ) -- no active failure, let future comm error signal it
-    -- isConnected = false
+    -- devData[pdev].isConnected = false
 end
 
 -- Handle PONG response
@@ -770,7 +758,6 @@ local function handleDiscoveryMessage( msg, parentDev )
     
     local children = inventoryChildren( parentDev )
     local ptr = luup.chdev.start( parentDev )
-    local ndev
     for _,ndev in ipairs( children ) do
         local v = luup.devices[ndev]
         local lastID = luup.variable_get( DEVICESID, "IntesisID", ndev )
@@ -811,7 +798,7 @@ end
 
 function deviceTick( dargs )
     D("deviceTick(%1), luup.device=%2", dargs, luup.device)
-    local dev, stamp, rem = dargs:match("^(%d+):(%d+):(.*)$")
+    local dev, stamp = dargs:match("^(%d+):(%d+):(.*)$")
     dev = tonumber(dev, 10)
     assert(dev ~= nil, "Nil device in deviceTick()")
     stamp = tonumber(stamp, 10)
@@ -842,12 +829,10 @@ function deviceTick( dargs )
         
         -- If it's been more than two refresh intervals or three pings since we
         -- received some data, we may be in trouble...
-        if isConnected and ( (now - devData[dev].lastIncoming) >= math.min( 2 * intRefresh, 3 * intPing ) ) then
+        if devData[dev].isConnected and ( (now - devData[dev].lastIncoming) >= math.min( 2 * intRefresh, 3 * intPing ) ) then
             L("Device receive timeout; marking disconnected!")
             pcall( closeSocket, dev )
             updateDeviceStatus( dev )
-        else
-            isConnected = true
         end
 
         -- Refresh or ping due?
@@ -965,9 +950,9 @@ local function deviceStart( dev, parentDev )
     deviceRunOnce( dev, parentDev )
 
     if isALTUI then
-        rc,rs,jj,ra = luup.call_action("urn:upnp-org:serviceId:altui1", "RegisterPlugin",
+        local rc,rs,jj,ra = luup.call_action("urn:upnp-org:serviceId:altui1", "RegisterPlugin",
             { newDeviceType=MYTYPE, newScriptFile="J_IntesisWMPDevice1_ALTUI.js", newDeviceDrawFunc="IntesisWMPDevice1_ALTUI.DeviceDraw" },
-                k )
+                dev )
             D("deviceStart() ALTUI's RegisterPlugin action returned resultCode=%1, resultString=%2, job=%3, returnArguments=%4", rc,rs,jj,ra)
     end
 
@@ -1063,8 +1048,9 @@ local function discoveryByIP( ipaddr, dev )
         if status then
             sock:close()
             L("IP discovery was unable to determine MAC address, but device is connectible. Proceeding with empty MAC.")
-            newMAC = "000000000000"
+            res = { [1] = { mac = "000000000000", ip = ipaddr } }
         else
+            D("discoveryByIP() failed to connect to %1, %2", ipaddr, err)
             gatewayStatus( "Device not found at IP " .. ipaddr , dev )
             return false
         end
@@ -1077,7 +1063,7 @@ end
 -- Tick for UDP discovery.
 function discoveryTick( dargs )
     D("discoveryTick(%1), luup.device=%2", dargs, luup.device)
-    local dev, stamp, rest = dargs:match("^(%d+):(%d+):(.*)$")
+    local dev, stamp = dargs:match("^(%d+):(%d+):(.*)$") -- ignore rest
     dev = tonumber(dev, 10)
     assert(dev ~= nil)
     assert(luup.devices[dev].device_num_parent == 0)
@@ -1345,8 +1331,8 @@ function actionDiscoverIP( dev, ipaddr )
 end
 
 function actionSetDebug( dev, enabled )
-    D("actionSetDebug(%1,%2)", dev, state)
-    if state == 1 or state == "1" or state == true or state == "true" then 
+    D("actionSetDebug(%1,%2)", dev, enabled)
+    if enabled == 1 or enabled == "1" or enabled == true or enabled == "true" then 
         debugMode = true 
         D("actionSetDebug() debug logging enabled")
     end
@@ -1393,7 +1379,6 @@ local function plugin_runOnce(dev)
              restart, we should re-enter this loop and find the child.
         --]]
         -- First, locate a v2 gateway. If we can't, create one and reload Luup.
-        local k,v
         local gateway = nil
         for k,v in pairs(luup.devices) do 
             if v.device_type == MYTYPE then
@@ -1433,12 +1418,10 @@ local function plugin_runOnce(dev)
         L("Discovered v2 gateway #%1", gateway)
         
         -- Found a gateway. This is an pre-V2 child. See if it already exists as a child of gateway.
-        local oldIP = luup.attr_get( "ip", dev )
         local oldIdent = luup.variable_get( MYSID, "IntesisID", dev ) or ""
         local pOld = split( oldIdent, "," )
         local children = inventoryChildren( gateway ) -- gateway's children
         for _,k in ipairs( children ) do
-            local childIP = luup.attr_get( "ip", k )
             local childIdent = luup.variable_get( DEVICESID, "IntesisID", k ) or ""
             local pChild = split( childIdent, "," )
             if pChild[2] ~= nil and pChild[2] == pOld[2] then
@@ -1475,15 +1458,10 @@ function plugin_init(dev)
     math.randomseed( os.time() )
 
     -- Check for ALTUI and OpenLuup
-    local k,v
-    for k,v in pairs(luup.devices) do
+    for _,v in pairs(luup.devices) do
         if v.device_type == "urn:schemas-upnp-org:device:altui:1" then
             D("init() detected ALTUI")
             isALTUI = true
-            rc,rs,jj,ra = luup.call_action("urn:upnp-org:serviceId:altui1", "RegisterPlugin",
-                { newDeviceType=MYTYPE, newScriptFile="J_IntesisWMPGateway1_ALTUI.js", newDeviceDrawFunc="IntesisWMPGateway1_ALTUI.DeviceDraw" },
-                    k )
-                D("plugin_init() ALTUI's RegisterPlugin action returned resultCode=%1, resultString=%2, job=%3, returnArguments=%4", rc,rs,jj,ra)
         elseif v.device_type == "openLuup" then
             D("init() detected openLuup")
             isOpenLuup = true
@@ -1513,7 +1491,6 @@ function plugin_init(dev)
     if #children == 0 and getVarNumeric( "RunStartupDiscovery", 1, dev, MYSID ) ~= 0 then
         launchDiscovery( dev )
     end
-    local cn 
     for _,cn in ipairs( children ) do
         L("Starting device %1 (%2)", cn, luup.devices[cn].description)
         luup.variable_set( DEVICESID, "Failure", 0, cn ) -- IUPG
@@ -1563,8 +1540,7 @@ local function getDevice( dev, pdev, v )
         , manufacturer = luup.attr_get( "manufacturer", dev ) or ""
         , model = luup.attr_get( "model", dev ) or ""
     }
-    local rc,t,httpStatus
-    rc,t,httpStatus = luup.inet.wget("http://localhost/port_3480/data_request?id=status&DeviceNum=" .. dev .. "&output_format=json", 15)
+    local rc,t,httpStatus = luup.inet.wget("http://localhost/port_3480/data_request?id=status&DeviceNum=" .. dev .. "&output_format=json", 15)
     if httpStatus ~= 200 or rc ~= 0 then 
         devinfo['_comment'] = string.format( 'State info could not be retrieved, rc=%d, http=%d', rc, httpStatus )
         return devinfo
@@ -1593,14 +1569,12 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
             return dkjson.encode( { id="IntesisWMPGateway-" .. luup.pk_accesspoint, apiversion=1 } ), "application/json"
         elseif path == "/rooms" then
             local roomlist = { { id=0, name="No Room" } }
-            local rn,rr
             for rn,rr in pairs( luup.rooms ) do 
                 table.insert( roomlist, { id=rn, name=rr } )
             end
             return dkjson.encode( { rooms=roomlist } ), "application/json"
         elseif path == "/devices" then
             local devices = {}
-            local lnum,ldev
             for lnum,ldev in pairs( luup.devices ) do
                 if ldev.device_type == DEVICETYPE then
                     local issinfo = {}
@@ -1670,12 +1644,10 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
             },            
             devices={}
         }
-        local k,v
         for k,v in pairs( luup.devices ) do
             if v.device_type == MYTYPE then
                 local gwinfo = getDevice( k, luup.device, v ) or {}
                 local children = inventoryChildren( k )
-                local cn
                 gwinfo.children = {}
                 for _,cn in ipairs( children ) do
                     table.insert( gwinfo.children, getDevice( cn, luup.device ) )
