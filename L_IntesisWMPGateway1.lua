@@ -56,7 +56,7 @@ local _PLUGIN_VERSION = "2.0"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 020000
 
-local debugMode = true
+local debugMode = false
 local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
