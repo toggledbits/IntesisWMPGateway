@@ -11,7 +11,8 @@
         function startupWMPGateway(dev)
             luup.log("IntesisWMPGateway Plugin START-UP!")
             IntesisWMPGateway = require("L_IntesisWMPGateway1")
-            intesisTick = IntesisWMPGateway.plugin_tick
+            intesisDeviceTick = IntesisWMPGateway.deviceTick
+            intesisDiscoveryTick = IntesisWMPGateway.discoveryTick
             intesisVarChanged = IntesisWMPGateway.varChanged
             intesisRequestHandler = IntesisWMPGateway.plugin_requestHandler
             luup.register_handler("intesisRequestHandler", "IntesisWMPGateway")
@@ -85,7 +86,7 @@
             <name>GetMode</name>
             <run>
                 -- Luup takes care of returning relatedStateVariable
-                -- See also IntesisWMPGateway1/GetCurrentFanSpeed
+                -- See also IntesisWMPDevice1/GetCurrentFanSpeed
             </run>
         </action>
         <action>
@@ -105,7 +106,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>SetName</name>
             <run>
                 -- Set the device name.
@@ -113,14 +114,14 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>GetName</name>
             <run>
                 -- Luup takes care of returning relatedStateVariable
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>FanSpeedUp</name>
             <run>
                 -- Raise the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
@@ -128,7 +129,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>FanSpeedDown</name>
             <run>
                 -- Lower the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
@@ -136,7 +137,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>SetCurrentFanSpeed</name>
             <run>
                 -- Set Intesis fan speed. Must pass NewFanSpeed. If nil, 0, or empty, returns to Auto.
@@ -144,14 +145,14 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>GetCurrentFanSpeed</name>
             <run>
                 -- Luup takes care of returning relatedStateVariable
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>SetLeftRightVanePosition</name>
             <run>
                 -- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
@@ -159,7 +160,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>GetLeftRightVanePosition</name>
             <run>
                 -- Return current L/R vale position setting.
@@ -167,7 +168,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>VaneLeft</name>
             <run>
                 -- Set Intesis vane position up (relative)
@@ -175,7 +176,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>VaneRight</name>
             <run>
                 -- Set Intesis vane position down (relative)
@@ -183,7 +184,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>SetUpDownVanePosition</name>
             <run>
                 -- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
@@ -191,7 +192,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>GetUpDownVanePosition</name>
             <run>
                 -- Return current U/D vale position setting.
@@ -199,7 +200,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>VaneUp</name>
             <run>
                 -- Set Intesis vane position up (relative)
@@ -207,7 +208,7 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>VaneDown</name>
             <run>
                 -- Set Intesis vane position down (relative)
@@ -215,10 +216,38 @@
             </run>
         </action>
         <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
             <name>GetSignalStrength</name>
             <run>
                 -- Luup takes care of returning relatedStateVariable (SignalDB)
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>RunDiscovery</name>
+            <run>
+                IntesisWMPGateway.actionRunDiscovery( lul_device )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>DiscoverMAC</name>
+            <run>
+                IntesisWMPGateway.actionDiscoverMAC( lul_device, lul_settings.MACAddress )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>DiscoverIP</name>
+            <run>
+                IntesisWMPGateway.actionDiscoverIP( lul_device, lul_settings.IPAddress )
+            </run>
+        </action>
+        <action>
+            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+            <name>SetDebug</name>
+            <run>
+                IntesisWMPGateway.actionSetDebug( lul_device, lul_settings.debug )
             </run>
         </action>
     </actionList>
