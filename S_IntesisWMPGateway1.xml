@@ -5,180 +5,29 @@
         <minor>0</minor>
     </specVersion>
     <serviceStateTable>
-        <stateVariable sendEvents="no">
-            <name>Name</name>
-            <dataType>string</dataType>
-            <defaultValue></defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>SignalDB</name>
-            <dataType>i4</dataType>
-            <defaultValue></defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="no">
-            <name>IntesisID</name>
-            <dataType>string</dataType>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisONOFF</name>
-            <dataType>string</dataType>
-            <defaultValue>OFF</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisMODE</name>
-            <dataType>string</dataType>
-            <defaultValue>AUTO</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisFANSP</name>
-            <dataType>string</dataType>
-            <defaultValue>AUTO</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisVANEUD</name>
-            <dataType>string</dataType>
-            <defaultValue>AUTO</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisVANELR</name>
-            <dataType>string</dataType>
-            <defaultValue>AUTO</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisERRSTATUS</name>
-            <dataType>string</dataType>
-            <defaultValue>OK</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>IntesisERRCODE</name>
-            <dataType>string</dataType>
-            <defaultValue></defaultValue>
-        </stateVariable>
     </serviceStateTable>
     <actionList>
         <action>
-            <name>SetName</name>
+            <name>RunDiscovery</name>
+            <argumentList>
+            </argumentList>
+        </action>
+        <action>
+            <name>DiscoverMAC</name>
             <argumentList>
                 <argument>
-                    <name>NewName</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>Name</relatedStateVariable>
+                   <name>MACAddress</name>
+                   <direction>in</direction>
                 </argument>
             </argumentList>
         </action>
         <action>
-            <name>GetName</name>
+            <name>DiscoverIP</name>
             <argumentList>
                 <argument>
-                   <name>Name</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>Name</relatedStateVariable>
-                   <retval/>
+                   <name>IPAddress</name>
+                   <direction>in</direction>
                 </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>GetSignalStrength</name>
-            <argumentList>
-                <argument>
-                   <name>SignalDB</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>SignalDB</relatedStateVariable>
-                   <retval/>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>FanSpeedUp</name>
-            <argumentList>
-            </argumentList>
-        </action>
-        <action>
-            <name>FanSpeedDown</name>
-            <argumentList>
-            </argumentList>
-        </action>
-        <action>
-            <name>SetCurrentFanSpeed</name>
-            <argumentList>
-                <argument>
-                    <name>NewCurrentFanSpeed</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>IntesisFANSP</relatedStateVariable>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>GetCurrentFanSpeed</name>
-            <argumentList>
-                <argument>
-                   <name>CurrentFanSpeed</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>IntesisFANSP</relatedStateVariable>
-                   <retval/>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>SetLeftRightVanePosition</name>
-            <argumentList>
-                <argument>
-                    <name>NewPosition</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>IntesisVANELR</relatedStateVariable>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>GetLeftRightVanePosition</name>
-            <argumentList>
-                <argument>
-                   <name>CurrentPosition</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>IntesisVANELR</relatedStateVariable>
-                   <retval/>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>VaneLeft</name>
-            <argumentList>
-            </argumentList>
-        </action>
-        <action>
-            <name>VaneRight</name>
-            <argumentList>
-            </argumentList>
-        </action>
-        <action>
-            <name>SetUpDownVanePosition</name>
-            <argumentList>
-                <argument>
-                    <name>NewPosition</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>IntesisVANEUD</relatedStateVariable>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>GetUpDownVanePosition</name>
-            <argumentList>
-                <argument>
-                   <name>CurrentPosition</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>IntesisVANEUD</relatedStateVariable>
-                   <retval/>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>VaneUp</name>
-            <argumentList>
-            </argumentList>
-        </action>
-        <action>
-            <name>VaneDown</name>
-            <argumentList>
             </argumentList>
         </action>
         <action>
