@@ -212,24 +212,53 @@ local function CtoF( temp )
     return ( temp * 9 / 5 ) + 32
 end
 
+local function askLuci(p)
+    local uci = require("uci")
+    if uci then
+        local ctx = uci.cursor(nil, "/var/state")
+        if ctx then
+            return ctx:get(unpack((split(p,"."))))
+        end
+    end
+    return nil
+end
+
 -- Query UCI for WAN IP4 IP
 local function getSystemIP4Addr( dev )
-    local p = io.popen("/sbin/uci -P /var/state get network.wan.ipaddr")
-    local vera_ip = p:read("*a") or ""
-    p:close()
+    local vera_ip = askLuci("network.wan.ipaddr")
+    D("getSystemIP4Addr() got %1 from Luci", vera_ip)
+    if not vera_ip then
+        -- Fallback method
+        local p = io.popen("/sbin/uci -P /var/state get network.wan.ipaddr")
+        vera_ip = p:read("*a") or ""
+        p:close()
+        D("getSystemIP4Addr() got system ip4addr %1 using fallback", vera_ip)
+    end
     return vera_ip:gsub("%c","")
 end
 
 -- Query UCI for WAN IP4 netmask
 local function getSystemIP4Mask( dev )
-    local p = io.popen("/sbin/uci -P /var/state get network.wan.netmask")
-    local mask = p:read("*a") or ""
-    p:close()
+    local mask = askLuci("network.wan.netmask");
+    D("getSystemIP4Mask() got %1 from Luci", mask)
+    if not mask then
+        -- Fallback method
+        local p = io.popen("/sbin/uci -P /var/state get network.wan.netmask")
+        mask = p:read("*a") or ""
+        p:close()
+        D("getSystemIP4Addr() got system ip4mask %1 using fallback", mask)
+    end
     return mask:gsub("%c","")
 end
 
 -- Compute broadcast address (IP4)
 local function getSystemIP4BCast( dev )
+    local broadcast = luup.variable_get( MYSID, "DiscoveryBroadcast", dev ) or ""
+    if broadcast ~= "" then
+        return broadcast
+    end
+    
+    -- Do it the hard way.
     local vera_ip = getSystemIP4Addr( dev )
     local mask = getSystemIP4Mask( dev )
     D("getSystemIP4BCast() sys ip %1 netmask %2", vera_ip, mask)
@@ -241,7 +270,7 @@ local function getSystemIP4BCast( dev )
     a2 = bit.bor(bit.band(a2,m1), bit.bxor(m2,255))
     a3 = bit.bor(bit.band(a3,m3), bit.bxor(m3,255))
     a4 = bit.bor(bit.band(a4,m4), bit.bxor(m4,255))
-    local broadcast = string.format("%d.%d.%d.%d", a1, a2, a3, a4)
+    broadcast = string.format("%d.%d.%d.%d", a1, a2, a3, a4)
     D("getSystemIP4BCast() computed broadcast address is %1", broadcast)
     return broadcast
 end
