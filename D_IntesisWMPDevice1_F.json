@@ -1,7 +1,7 @@
 {
-    "default_icon": "https://www.toggledbits.com/intesis/assets/wmp_mode_off.png",
+    "default_icon": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
     "state_icons": [{
-            "img": "https://www.toggledbits.com/intesis/assets/wmp_mode_off.png",
+            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
             "conditions": [{
                 "service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
                 "variable": "Failure",
@@ -9,7 +9,7 @@
                 "value": "1"
             }]
         }, {
-            "img": "https://www.toggledbits.com/intesis/assets/wmp_mode_heat.png",
+            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_heat.png",
             "conditions": [{
                 "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
                 "variable": "ModeStatus",
@@ -18,7 +18,7 @@
             }]
         },
         {
-            "img": "https://www.toggledbits.com/intesis/assets/wmp_mode_cool.png",
+            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_cool.png",
             "conditions": [{
                 "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
                 "variable": "ModeStatus",
@@ -27,7 +27,7 @@
             }]
         },
         {
-            "img": "https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
+            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
             "conditions": [{
                 "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
                 "variable": "ModeStatus",
@@ -36,7 +36,7 @@
             }]
         },
         {
-            "img": "https://www.toggledbits.com/intesis/assets/wmp_mode_auto.png",
+            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
             "conditions": [{
                 "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
                 "variable": "ModeStatus",
@@ -45,7 +45,7 @@
             }]
         },
         {
-            "img": "https://www.toggledbits.com/intesis/assets/wmp_mode_cool.png",
+            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_cool.png",
             "conditions": [{
                 "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
                 "variable": "ModeStatus",
@@ -655,7 +655,7 @@
                     "left": "0",
                     "Label": {
                         "lang_tag": "wmp_about",
-                        "text": "Intesis WMP Gateway plug-in v2.0 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+                        "text": "Intesis WMP Gateway plug-in v2.1 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
                     },
                     "Display": {
                         "Top": 270,
