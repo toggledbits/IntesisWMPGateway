@@ -56,7 +56,7 @@ local _PLUGIN_VERSION = "2.2"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 020200
 
-local debugMode = false
+local debugMode = true
 local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -234,7 +234,12 @@ local function getSystemIP4Addr( dev )
     D("getSystemIP4Addr() got %1 from Luci", vera_ip)
     if not vera_ip then
         -- Fallback method
+        --[[
         local p = io.popen("/sbin/uci -P /var/state get network.wan.ipaddr")
+        vera_ip = p:read("*a") or ""
+        p:close()
+        --]]
+        local p = io.popen("/usr/bin/GetNetworkState.sh wan_ip")
         vera_ip = p:read("*a") or ""
         p:close()
         D("getSystemIP4Addr() got system ip4addr %1 using fallback", vera_ip)
@@ -248,7 +253,12 @@ local function getSystemIP4Mask( dev )
     D("getSystemIP4Mask() got %1 from Luci", mask)
     if not mask then
         -- Fallback method
+        --[[
         local p = io.popen("/sbin/uci -P /var/state get network.wan.netmask")
+        mask = p:read("*a") or ""
+        p:close()
+        --]]
+        local p = io.popen("/usr/bin/GetNetworkState.sh wan_netmask")
         mask = p:read("*a") or ""
         p:close()
         D("getSystemIP4Addr() got system ip4mask %1 using fallback", mask)
