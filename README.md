@@ -6,6 +6,11 @@ IntesisWMPGateway is a "plug-in" for for Vera home automation controllers that m
 thermostat and uses the Intesis WMP communications protocol to send commands and receive status from an Intesis WMP gateway
 device.
 
+The IntesisWMPGateway plug-in works with the following Intesis devices: IS-IR-WMP-1, ME-AC-WMP-1, DK-AC-WMP-1, 
+MH-AC-WMP-1, MH-RC-WMP-1, TD-RC-WMP-1, PA-AC-WMP-1, PA-RC2-WMP-1, LG-RC-WMP-1, FJ-RC-WMP-1. The plug-in uses the local
+WMP interface for communication (uses TCP port 3310). Note that devices that use Intesis cloud service for control
+do not work, even though they may have "WMP" in the product model. A separate plug-in is planned for these devices.
+
 IntesisWMPGateway works with ALTUI, but does not work with openLuup at this time.
 
 IntesisWMPGateway is written and supported by Patrick Rigney, aka rigpapa on the [Vera forums](http://forum.micasaverde.com/).

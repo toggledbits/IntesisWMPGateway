@@ -485,10 +485,6 @@
                     "ControlCode": "wmp_status"
                 },
 
-
-
-
-
                 {
                     "ControlType": "label",
                     "top": "0.1",
@@ -606,7 +602,6 @@
                         "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
                         "Variable": "IntesisVANEUD",
                         "Value": "AUTO"
-
                     },
                     "Command": {
                         "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
@@ -646,16 +641,13 @@
                     "ControlCode": "vane_autolr"
                 },
 
-
-
-
                 {
                     "ControlType": "label",
                     "top": "0.2",
                     "left": "0",
                     "Label": {
                         "lang_tag": "wmp_about",
-                        "text": "Intesis WMP Gateway plug-in v2.1 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+                        "text": "Intesis WMP Gateway plug-in v2.2 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
                     },
                     "Display": {
                         "Top": 270,

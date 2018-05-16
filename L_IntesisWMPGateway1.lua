@@ -52,9 +52,9 @@ local string = require("string")
 local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "2.1"
+local _PLUGIN_VERSION = "2.2"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
-local _CONFIGVERSION = 020000
+local _CONFIGVERSION = 020200
 
 local debugMode = false
 local traceMode = false
@@ -213,12 +213,17 @@ local function CtoF( temp )
 end
 
 local function askLuci(p)
+    D("askLuci(%1)", p)
     local uci = require("uci")
     if uci then
         local ctx = uci.cursor(nil, "/var/state")
         if ctx then
-            return ctx:get(unpack((split(p,"."))))
+            return ctx:get(unpack((split(p,"%."))))
+        else
+            D("askLuci() can't get context")
         end
+    else
+        D("askLuci() no UCI module")
     end
     return nil
 end
@@ -229,7 +234,7 @@ local function getSystemIP4Addr( dev )
     D("getSystemIP4Addr() got %1 from Luci", vera_ip)
     if not vera_ip then
         -- Fallback method
-        local p = io.popen("/sbin/uci -P /var/state get network.wan.ipaddr")
+        local p = io.popen("/usr/bin/GetNetworkState.sh wan_ip")
         vera_ip = p:read("*a") or ""
         p:close()
         D("getSystemIP4Addr() got system ip4addr %1 using fallback", vera_ip)
@@ -243,7 +248,7 @@ local function getSystemIP4Mask( dev )
     D("getSystemIP4Mask() got %1 from Luci", mask)
     if not mask then
         -- Fallback method
-        local p = io.popen("/sbin/uci -P /var/state get network.wan.netmask")
+        local p = io.popen("/usr/bin/GetNetworkState.sh wan_netmask")
         mask = p:read("*a") or ""
         p:close()
         D("getSystemIP4Addr() got system ip4mask %1 using fallback", mask)
@@ -400,13 +405,13 @@ local function deviceConnectTCP( dev )
     
     if devData[dev].isConnected == true and devData[dev].sock ~= nil then return true end
 
-    local ip = luup.attr_get( "ip", dev ) or ""
+    local ip = luup.variable_get( DEVICESID, "IPAddress", dev ) or ""
     local port = getVarNumeric( "TCPPort", 3310, dev, DEVICESID )
     D("deviceConnectTCP() connecting to %1:%2...", ip, port )
     local sock, err = socket.tcp()
     if sock then
-        sock:settimeout( 1, "b" )
-        sock:settimeout( 1, "r" )
+        sock:settimeout( 5, "b" )
+        sock:settimeout( 5, "r" )
         local status
         if ip ~= "" then
             status, err = sock:connect( ip, port )
@@ -426,13 +431,13 @@ local function deviceConnectTCP( dev )
                     if newIP.ip ~= ip then -- don't try what already failed
                         D("deviceConnectTCP() attempting connect to %1:%2", newIP.ip, port)
                         sock = socket.tcp() -- get a new socket
-                        sock:settimeout( 1, "b" )
-                        sock:settimeout( 1, "r" )
+                        sock:settimeout( 5, "b" )
+                        sock:settimeout( 5, "r" )
                         status, err = sock:connect( newIP.ip, port )
                         if status then
                             -- Good connect! Store new address.
                             L("IP address for %1 (%2) has changed, was %3, now %4", dev, luup.devices[dev].description, ip, newIP.ip)
-                            luup.attr_set( "ip", newIP.ip, dev )
+                            luup.variable_set( DEVICESID, "IPAddress", newIP.ip, dev )
                             configureSocket( sock, dev )
                             return true
                         end
@@ -472,6 +477,8 @@ local function sendCommand( cmdString, dev )
         end
     end
 
+    devData[dev].sock:settimeout( 2, "b" )
+    devData[dev].sock:settimeout( 2, "r" )
     local nb, err = devData[dev].sock:send( cmd )
     if nb ~= nil then
         D("sendCommand() send succeeded, %1 bytes sent", nb)
@@ -701,6 +708,8 @@ local function deviceReceive( dev )
     -- We'd love for LuaSocket to have an option to just return as much data as it has...
     -- Loop for up to 255 bytes. That's an arbitrary choice to make sure we return
     -- to our caller if the peer is transmitting continuously.
+    devData[dev].sock:settimeout( 1, "b" )
+    devData[dev].sock:settimeout( 1, "r" )
     local count = 0
     while count < 255 do
         local b, err = devData[dev].sock:receive(1)
@@ -789,9 +798,8 @@ local function handleDiscoveryMessage( msg, parentDev )
     local ptr = luup.chdev.start( parentDev )
     for _,ndev in ipairs( children ) do
         local v = luup.devices[ndev]
-        local lastID = luup.variable_get( DEVICESID, "IntesisID", ndev )
         D("adding child %1 (%2)", v.id, v.description)
-        luup.chdev.append( parentDev, ptr, v.id, v.description, "", "D_IntesisWMPDevice1.xml", "", DEVICESID .. ",IntesisID=" .. lastID, true )
+        luup.chdev.append( parentDev, ptr, v.id, v.description, "", "D_IntesisWMPDevice1.xml", "", "", false )
     end
     
     -- Now add newly discovered device
@@ -806,7 +814,7 @@ local function handleDiscoveryMessage( msg, parentDev )
         "D_IntesisWMPDevice1.xml", -- device file
         "", -- impl file
         DEVICESID .. ",IntesisID=" .. ident, -- state vars
-        true -- embedded
+        false -- embedded
     )
     
     -- Close children. This will cause a Luup reload if something changed.
@@ -905,6 +913,8 @@ local function deviceRunOnce( dev, parentDev )
         -- Initialize for new installation
         D("runOnce() Performing first-time initialization!")
         luup.variable_set(DEVICESID, "Parent", parentDev, dev )
+        luup.variable_set(DEVICESID, "IPAddress", "", dev )
+        luup.variable_set(DEVICESID, "TCPPort", "", dev )
         luup.variable_set(DEVICESID, "Name", "", dev)
         luup.variable_set(DEVICESID, "SignalDB", "", dev)
         luup.variable_set(DEVICESID, "DisplayTemperature", "--.-", dev)
@@ -945,14 +955,10 @@ local function deviceRunOnce( dev, parentDev )
         return
     end
 
---[[ Future config revisions should compare the current revision number and apply
-     changes incrementally. The code below is an example of how to handle.
-
-    if rev < 010100 then
-        D("runOnce() updating config for rev 010100")
-        -- Future. This code fragment is provided to demonstrate method.
-        -- Insert statements necessary to upgrade configuration for version number indicated in conditional.
-        -- Go one version at a time (that is, one condition block for each version number change).
+    if rev < 020200 then
+        L("Updating configuration for rev 020200")
+        luup.variable_set(DEVICESID, "IPAddress", "", dev )
+        luup.variable_set(DEVICESID, "TCPPort", "", dev )
     end
 --]]
 
@@ -989,8 +995,6 @@ local function deviceStart( dev, parentDev )
     
     -- The device IP can change at any time, so always use the last discovery
     -- response. Make an effort here. It's not always easy.
-    -- ??? What if IP address changes? We should use ARP to find IP for MAC (no discovery path, though)
-    -- ??? And that should maybe be done at the send/connection level? So a change mid-flow doesn't bug us?
     local ident = luup.variable_get( DEVICESID, "IntesisID", dev ) or ""
     D("deviceStart() last known ident is %1", ident)
     local parts = split( ident, "," )
@@ -1001,8 +1005,10 @@ local function deviceStart( dev, parentDev )
         return false, "Can't establish IP address from ident string"
     end
     D("deviceStart() updating device IP to %1", devIP)
-    luup.attr_set( "ip", devIP, dev )
-
+    luup.variable_set( DEVICESID, "IPAddress", devIP, dev )
+    luup.attr_set( "ip", "", dev )
+    luup.attr_set( "mac", "", dev )
+    
     --[[ Work out the system units, the user's desired display units, and the configuration units.
          The user's desire overrides the system configuration. This is an exception provided in
          case the user has a thermostat for which they want to operate in units other than the
