@@ -93,7 +93,7 @@
                     "id": "2",
                     "top": "0",
                     "left": "2",
-                    "x": "0.5",
+                    "x": "2",
                     "y": "3"
                 },
                 {
@@ -330,8 +330,8 @@
                         "Editable": 1,
                         "Top": 0,
                         "Left": 360,
-                        "Width": 80,
-                        "Height": 60
+                        "Width": 100,
+                        "Height": 25
                     },
                     "Command": {
                         "Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",

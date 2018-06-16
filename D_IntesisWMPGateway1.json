@@ -222,7 +222,7 @@
 					"left": "0",
 					"Label": {
 						"lang_tag": "wmp_gw_about",
-						"text": "<b>Important!</b> Your IntesisBox device(s) must be powered on and connected to your network for any of these forms of discovery to work. If discovery is not finding your device, power-cycle the device and try again. If it still fails, your device may not be compatible with this plugin.<br/>&nbsp;<br/>Intesis WMP Gateway Plugin ver 2.2 &#169; Patrick H. Rigney, All Rights Reserved. Docs and license at <a href=\"http://www.toggledbits.com/intesis\" target=\"_blank\">https://www.toggledbits.com/intesis</a>. Please consider <a href=\"https://www.makersupport.com/toggledbits\" target=\"_blank\">making a donation</a> for ongoing support of this project."
+						"text": "<b>Important!</b> Your IntesisBox device(s) must be powered on and connected to your network for any of these forms of discovery to work. If discovery is not finding your device, power-cycle the device and try again. If it still fails, your device may not be compatible with this plugin.<br/>&nbsp;<br/>Intesis WMP Gateway Plugin ver 2.2 &#169; Patrick H. Rigney, All Rights Reserved. Docs and license at <a href=\"http://www.toggledbits.com/intesis\" target=\"_blank\">https://www.toggledbits.com/intesis</a>. Please consider <a href=\"https://www.toggledbits.com/donate\" target=\"_blank\">making a small donation</a> for ongoing support of this project."
 					},
 					"Display": {
 						"Top": 260,
