@@ -54,7 +54,7 @@
 			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
 			<name>SetEnergyModeTarget</name>
 			<run>
-                local newMode = lul_settings.NewEnergyModeTarget
+                local newMode = lul_settings.NewModeTarget
                 IntesisWMPGateway.actionSetEnergyModeTarget( lul_device, newMode )
 			</run>
 		</action>
