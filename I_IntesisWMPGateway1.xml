@@ -1,254 +1,270 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <implementation>
-    <functions>
-        -- -------------------------------------------------------------------------------------------------------------------------
-        -- IntesisWMPGateway -- Intesis (ASCII) interface for Vera/MiOS
-        --
-        -- Copyright 2017 Patrick Rigney, All Rights Reserved
-        --
-        -- See http://www.toggledbits.com/intesis/
-        -- -------------------------------------------------------------------------------------------------------------------------
-        function startupWMPGateway(dev)
-            luup.log("IntesisWMPGateway Plugin START-UP!")
-            IntesisWMPGateway = require("L_IntesisWMPGateway1")
-            intesisDeviceTick = IntesisWMPGateway.deviceTick
-            intesisDiscoveryTick = IntesisWMPGateway.discoveryTick
-            intesisVarChanged = IntesisWMPGateway.varChanged
-            intesisRequestHandler = IntesisWMPGateway.plugin_requestHandler
-            luup.register_handler("intesisRequestHandler", "IntesisWMPGateway")
-            return IntesisWMPGateway.plugin_init(dev)
-        end
-    </functions>
-    <startup>startupWMPGateway</startup>
-    <incoming>
-        <lua>
-            IntesisWMPGateway.plugin_handleIncoming( lul_device, lul_data )
+	<functions>
+		-- -------------------------------------------------------------------------------------------------------------------------
+		-- IntesisWMPGateway -- Intesis (ASCII) interface for Vera/MiOS
+		--
+		-- Copyright 2017 Patrick Rigney, All Rights Reserved
+		--
+		-- See http://www.toggledbits.com/intesis/
+		-- -------------------------------------------------------------------------------------------------------------------------
+		function startupWMPGateway(dev)
+			luup.log("IntesisWMPGateway Plugin START-UP!")
+			IntesisWMPGateway = require("L_IntesisWMPGateway1")
+			intesisDeviceTick = IntesisWMPGateway.deviceTick
+			intesisDiscoveryTick = IntesisWMPGateway.discoveryTick
+			intesisVarChanged = IntesisWMPGateway.varChanged
+			intesisRequestHandler = IntesisWMPGateway.plugin_requestHandler
+			luup.register_handler("intesisRequestHandler", "IntesisWMPGateway")
+			return IntesisWMPGateway.plugin_init(dev)
+		end
+	</functions>
+	<startup>startupWMPGateway</startup>
+	<incoming>
+		<lua>
+			IntesisWMPGateway.plugin_handleIncoming( lul_device, lul_data )
 	    </lua>
-    </incoming>
-    <actionList>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
-            <name>SetModeTarget</name>
-            <run>
-                -- Change the operating to one of Off, HeatOn, CoolOn, AutoChangeOver
-                -- receives NewModeTarget; variables ModeTarget/ModeStatus
-                local newMode = lul_settings.NewModeTarget
-                IntesisWMPGateway.actionSetModeTarget( lul_device, newMode )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
-            <name>GetModeTarget</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
-            <name>GetModeStatus</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
+	</incoming>
+	<actionList>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
+			<name>SetModeTarget</name>
+			<run>
+				-- Change the operating to one of Off, HeatOn, CoolOn, AutoChangeOver
+				-- receives NewModeTarget; variables ModeTarget/ModeStatus
+				local newMode = lul_settings.NewModeTarget
+				IntesisWMPGateway.actionSetModeTarget( lul_device, newMode )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
+			<name>GetModeTarget</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
+			<name>GetModeStatus</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
 		<action>
 			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
 			<name>SetEnergyModeTarget</name>
 			<run>
-                local newMode = lul_settings.NewModeTarget
-                IntesisWMPGateway.actionSetEnergyModeTarget( lul_device, newMode )
+				local newMode = lul_settings.NewModeTarget
+				IntesisWMPGateway.actionSetEnergyModeTarget( lul_device, newMode )
 			</run>
 		</action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
-            <name>GetEnergyModeTarget</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
-            <name>GetEnergyModeStatus</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_FanOperatingMode1</serviceId>
-            <name>SetMode</name>
-            <run>
-                -- Sets fan operating mode to one of Auto, ContinousOn, PeriodicOn
-                -- receives NewMode; related Mode, FanStatus ("On", "Off")
-                IntesisWMPGateway.actionSetFanMode( lul_device, lul_settings.NewMode )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:HVAC_FanOperatingMode1</serviceId>
-            <name>GetMode</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-                -- See also IntesisWMPDevice1/GetCurrentFanSpeed
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:TemperatureSetpoint1</serviceId>
-            <name>SetCurrentSetpoint</name>
-            <run>
-                -- Set temperature setpoint.
-                -- See http://upnp.org/specs/ha/UPnP-ha-TemperatureSetpoint-v1-Service.pdf
-                IntesisWMPGateway.actionSetCurrentSetpoint( lul_device, lul_settings.NewCurrentSetpoint )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:upnp-org:serviceId:TemperatureSetpoint1</serviceId>
-            <name>GetCurrentSetpoint</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>SetName</name>
-            <run>
-                -- Set the device name.
-                IntesisWMPGateway.actionSetName( lul_device, lul_settings.NewName )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>GetName</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>FanSpeedUp</name>
-            <run>
-                -- Raise the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
-                IntesisWMPGateway.actionFanSpeedUp( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>FanSpeedDown</name>
-            <run>
-                -- Lower the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
-                IntesisWMPGateway.actionFanSpeedDown( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>SetCurrentFanSpeed</name>
-            <run>
-                -- Set Intesis fan speed. Must pass NewFanSpeed. If nil, 0, or empty, returns to Auto.
-                IntesisWMPGateway.actionSetCurrentFanSpeed( lul_device, lul_settings.NewFanSpeed )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>GetCurrentFanSpeed</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>SetLeftRightVanePosition</name>
-            <run>
-                -- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
-                IntesisWMPGateway.actionSetVaneLR( lul_device, lul_settings.NewPosition )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>GetLeftRightVanePosition</name>
-            <run>
-                -- Return current L/R vale position setting.
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>VaneLeft</name>
-            <run>
-                -- Set Intesis vane position up (relative)
-                IntesisWMPGateway.actionVaneLeft( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>VaneRight</name>
-            <run>
-                -- Set Intesis vane position down (relative)
-                IntesisWMPGateway.actionVaneRight( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>SetUpDownVanePosition</name>
-            <run>
-                -- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
-                IntesisWMPGateway.actionSetVaneUD( lul_device, lul_settings.NewPosition )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>GetUpDownVanePosition</name>
-            <run>
-                -- Return current U/D vale position setting.
-                -- Luup takes care of returning relatedStateVariable
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>VaneUp</name>
-            <run>
-                -- Set Intesis vane position up (relative)
-                IntesisWMPGateway.actionVaneUp( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>VaneDown</name>
-            <run>
-                -- Set Intesis vane position down (relative)
-                IntesisWMPGateway.actionVaneDown( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-            <name>GetSignalStrength</name>
-            <run>
-                -- Luup takes care of returning relatedStateVariable (SignalDB)
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
-            <name>RunDiscovery</name>
-            <run>
-                IntesisWMPGateway.actionRunDiscovery( lul_device )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
-            <name>DiscoverMAC</name>
-            <run>
-                IntesisWMPGateway.actionDiscoverMAC( lul_device, lul_settings.MACAddress )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
-            <name>DiscoverIP</name>
-            <run>
-                IntesisWMPGateway.actionDiscoverIP( lul_device, lul_settings.IPAddress )
-            </run>
-        </action>
-        <action>
-            <serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
-            <name>SetDebug</name>
-            <run>
-                IntesisWMPGateway.actionSetDebug( lul_device, lul_settings.debug )
-            </run>
-        </action>
-    </actionList>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
+			<name>GetEnergyModeTarget</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
+			<name>GetEnergyModeStatus</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_FanOperatingMode1</serviceId>
+			<name>SetMode</name>
+			<run>
+				-- Sets fan operating mode to one of Auto, ContinousOn, PeriodicOn
+				-- receives NewMode; related Mode, FanStatus ("On", "Off")
+				IntesisWMPGateway.actionSetFanMode( lul_device, lul_settings.NewMode )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:HVAC_FanOperatingMode1</serviceId>
+			<name>GetMode</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+				-- See also IntesisWMPDevice1/GetCurrentFanSpeed
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:TemperatureSetpoint1</serviceId>
+			<name>SetCurrentSetpoint</name>
+			<run>
+				-- Set temperature setpoint.
+				-- See http://upnp.org/specs/ha/UPnP-ha-TemperatureSetpoint-v1-Service.pdf
+				IntesisWMPGateway.actionSetCurrentSetpoint( lul_device, lul_settings.NewCurrentSetpoint )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:TemperatureSetpoint1</serviceId>
+			<name>GetCurrentSetpoint</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+
+		<action>
+			<serviceId>urn:upnp-org:serviceId:FanSpeed1</serviceId>
+			<name>SetFanSpeed</name>
+			<run>
+				IntesisWMPGateway.actionSetFanSpeed( lul_device, lul_settings.NewFanSpeedTarget )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:FanSpeed1</serviceId>
+			<name>SetFanDirection</name>
+			<run>
+				luup.log("IntesisWMPGateway: SetFanDirection is not supported",2)
+			</run>
+		</action>
+
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>SetName</name>
+			<run>
+				-- Set the device name.
+				IntesisWMPGateway.actionSetName( lul_device, lul_settings.NewName )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>GetName</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>FanSpeedUp</name>
+			<run>
+				-- Raise the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
+				IntesisWMPGateway.actionFanSpeedUp( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>FanSpeedDown</name>
+			<run>
+				-- Lower the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
+				IntesisWMPGateway.actionFanSpeedDown( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>SetCurrentFanSpeed</name>
+			<run>
+				-- Set Intesis fan speed. Must pass NewFanSpeed. If nil, 0, or empty, returns to Auto.
+				IntesisWMPGateway.actionSetCurrentFanSpeed( lul_device, lul_settings.NewFanSpeed )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>GetCurrentFanSpeed</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>SetLeftRightVanePosition</name>
+			<run>
+				-- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
+				IntesisWMPGateway.actionSetVaneLR( lul_device, lul_settings.NewPosition )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>GetLeftRightVanePosition</name>
+			<run>
+				-- Return current L/R vale position setting.
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>VaneLeft</name>
+			<run>
+				-- Set Intesis vane position up (relative)
+				IntesisWMPGateway.actionVaneLeft( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>VaneRight</name>
+			<run>
+				-- Set Intesis vane position down (relative)
+				IntesisWMPGateway.actionVaneRight( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>SetUpDownVanePosition</name>
+			<run>
+				-- Set Intesis vane position. Must pass NewPosition. If nil, 0, or "Auto", sets to auto.
+				IntesisWMPGateway.actionSetVaneUD( lul_device, lul_settings.NewPosition )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>GetUpDownVanePosition</name>
+			<run>
+				-- Return current U/D vale position setting.
+				-- Luup takes care of returning relatedStateVariable
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>VaneUp</name>
+			<run>
+				-- Set Intesis vane position up (relative)
+				IntesisWMPGateway.actionVaneUp( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>VaneDown</name>
+			<run>
+				-- Set Intesis vane position down (relative)
+				IntesisWMPGateway.actionVaneDown( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>GetSignalStrength</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable (SignalDB)
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>RunDiscovery</name>
+			<run>
+				IntesisWMPGateway.actionRunDiscovery( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>DiscoverMAC</name>
+			<run>
+				IntesisWMPGateway.actionDiscoverMAC( lul_device, lul_settings.MACAddress )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>DiscoverIP</name>
+			<run>
+				IntesisWMPGateway.actionDiscoverIP( lul_device, lul_settings.IPAddress )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>SetDebug</name>
+			<run>
+				IntesisWMPGateway.actionSetDebug( lul_device, lul_settings.debug )
+			</run>
+		</action>
+	</actionList>
 </implementation>
