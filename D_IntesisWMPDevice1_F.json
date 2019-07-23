@@ -1,905 +1,905 @@
 {
-    "default_icon": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
-    "state_icons": [{
-            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
-            "conditions": [{
-                "service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                "variable": "Failure",
-                "operator": "==",
-                "value": 1
-            }]
-        }, {
-            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_heat.png",
-            "conditions": [{
-                "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                "variable": "ModeStatus",
-                "operator": "==",
-                "value": "HeatOn"
-            }]
-        },
-        {
-            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_cool.png",
-            "conditions": [{
-                "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                "variable": "ModeStatus",
-                "operator": "==",
-                "value": "CoolOn"
-            }]
-        },
-        {
-            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
-            "conditions": [{
-                "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                "variable": "ModeStatus",
-                "operator": "==",
-                "value": "AutoChangeOver"
-            }]
-        },
-        {
-            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
-            "conditions": [{
-                "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                "variable": "ModeStatus",
-                "operator": "==",
-                "value": "FanOnly"
-            }]
-        },
-        {
-            "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_cool.png",
-            "conditions": [{
-                "service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                "variable": "ModeStatus",
-                "operator": "==",
-                "value": "Dry"
-            }]
-        }
-    ],
-    "x": 2,
-    "y": 4,
-    "inScene": 1,
-    "Tabs": [{
-            "Label": {
-                "lang_tag": "tabname_control",
-                "text": "Control"
-            },
-            "Position": 0,
-            "TabType": "flash",
-            "top_navigation_tab": 1,
-            "ControlGroup": [{
-                    "id": 1,
-                    "scenegroup": 1
-                },
-                {
-                    "id": 2,
-                    "scenegroup": 2
-                },
-                {
-                    "id": 3,
-                    "scenegroup": 3
-                },
-                {
-                    "id": 4,
-                    "scenegroup": 4
-                }
-            ],
-            "SceneGroup": [{
-                    "id": 1,
-                    "top": 0,
-                    "left": 0,
-                    "x": 1,
-                    "y": 4
-                },
-                {
-                    "id": 2,
-                    "top": 0,
-                    "left": 2,
-                    "x": 2,
-                    "y": 3
-                },
-                {
-                    "id": 3,
-                    "top": 0,
-                    "left": "2.5",
-                    "x": "0.5",
-                    "y": 3
-                },
-                {
-                    "id": 4,
-                    "top": 3,
-                    "left": 2,
-                    "x": 1,
-                    "y": 1
-                }
-            ],
-            "Control": [{
-                    "ControlType": "label",
-                    "top": 0,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "wmp_mode",
-                        "text": "Mode"
-                    },
-                    "Display": {
-                        "Top": 0,
-                        "Left": 30,
-                        "Width": 100,
-                        "Height": 25
-                    }
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "button",
-                    "top": 0,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_off",
-                        "text": "Off"
-                    },
-                    "Display": {
-                        "Top": 30,
-                        "Left": 50,
-                        "Width": 75,
-                        "Height": 20,
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Variable": "ModeTarget",
-                        "Value": "Off"
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Action": "SetModeTarget",
-                        "Parameters": [{
-                            "Name": "NewModeTarget",
-                            "Value": "Off"
-                        }]
-                    },
-                    "ControlCode": "thermostat_mode_off"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "button",
-                    "top": 1,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_auto",
-                        "text": "Auto"
-                    },
-                    "Display": {
-                        "Top": 60,
-                        "Left": 50,
-                        "Width": 75,
-                        "Height": 20,
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Variable": "ModeTarget",
-                        "Value": "AutoChangeOver"
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Action": "SetModeTarget",
-                        "Parameters": [{
-                            "Name": "NewModeTarget",
-                            "Value": "AutoChangeOver"
-                        }]
-                    },
-                    "ControlCode": "thermostat_mode_auto"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "line_break"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_cool",
-                        "text": "Cool"
-                    },
-                    "Display": {
-                        "Top": 30,
-                        "Left": 150,
-                        "Width": 75,
-                        "Height": 20,
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Variable": "ModeTarget",
-                        "Value": "CoolOn"
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Action": "SetModeTarget",
-                        "Parameters": [{
-                            "Name": "NewModeTarget",
-                            "Value": "CoolOn"
-                        }]
-                    },
-                    "ControlCode": "thermostat_mode_cool"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "button",
-                    "top": 3,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_heat",
-                        "text": "Heat"
-                    },
-                    "Display": {
-                        "Top": 60,
-                        "Left": 150,
-                        "Width": 75,
-                        "Height": 20,
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Variable": "ModeTarget",
-                        "Value": "HeatOn"
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Action": "SetModeTarget",
-                        "Parameters": [{
-                            "Name": "NewModeTarget",
-                            "Value": "HeatOn"
-                        }]
-                    },
-                    "ControlCode": "thermostat_mode_heat"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "line_break"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_fan",
-                        "text": "Fan"
-                    },
-                    "Display": {
-                        "Top": 30,
-                        "Left": 250,
-                        "Width": 75,
-                        "Height": 20,
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Variable": "ModeTarget",
-                        "Value": "FanOnly"
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Action": "SetModeTarget",
-                        "Parameters": [{
-                            "Name": "NewModeTarget",
-                            "Value": "FanOnly"
-                        }]
-                    },
-                    "ControlCode": "thermostat_mode_fanonly"
-                },
-                {
-                    "ControlGroup": 1,
-                    "ControlType": "button",
-                    "top": 4,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_dry",
-                        "text": "Dry"
-                    },
-                    "Display": {
-                        "Top": 60,
-                        "Left": 250,
-                        "Width": 75,
-                        "Height": 20,
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Variable": "ModeTarget",
-                        "Value": "Dry"
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-                        "Action": "SetModeTarget",
-                        "Parameters": [{
-                            "Name": "NewModeTarget",
-                            "Value": "Dry"
-                        }]
-                    },
-                    "ControlCode": "thermostat_mode_dry"
-                },
-                {
-                    "ControlGroup": 2,
-                    "ControlType": "spinner_horizontal",
-                    "top": 0,
-                    "left": 2,
-                    "ID": "NewSP",
-                    "Style": "numeric",
-                    "LabelUp": {
-                        "lang_tag": "temperature_increase",
-                        "text": "increase"
-                    },
-                    "LabelDown": {
-                        "lang_tag": "temperature_decrease",
-                        "text": "decrease"
-                    },
-                    "LabelSymbol": {
-                        "lang_tag": "heater_label_symbol",
-                        "text": "&deg;F"
-                    },
-                    "Display": {
-                        "Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
-                        "Variable": "CurrentSetpoint",
-                        "MinValue": 60,
-                        "MaxValue": 90,
-                        "Step": 0.5,
-                        "Editable": 1,
-                        "Top": 0,
-                        "Left": 360,
-                        "Width": 64,
-                        "Height": 64
-                    },
-                    "Command": {
-                        "Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
-                        "Action": "SetCurrentSetpoint",
-                        "ActionArgumentName": "NewCurrentSetpoint"
-                    },
-                    "ControlCode": "thermostat_set_temp"
-                },
-                {
-                    "ControlType": "label",
-                    "HorizontalMultiplier": "0.5",
-                    "top": "0.1",
-                    "left": 0,
-                    "text_align": "left",
-                    "Label": {
-                        "lang_tag": "wmp_fanspeed",
-                        "text": "Fan Speed"
-                    },
-                    "Display": {
-                        "Top": 90,
-                        "Left": 30,
-                        "Width": 80,
-                        "Height": 25
-                    }
-                },
-                {
-                    "ControlType": "variable",
-                    "HorizontalMultiplier": "0.5",
-                    "top": "0.1",
-                    "left": 1,
-                    "Display": {
-                        "Top": 90,
-                        "Left": 120,
-                        "Width": 120,
-                        "Height": 25,
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Variable": "IntesisFANSP"
-                    }
-                },
-                {
-                    "ControlType": "button",
-                    "top": 1,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_auto",
-                        "text": "Auto"
-                    },
-                    "Display": {
-                        "Top": 120,
-                        "Left": 50,
-                        "Width": 60,
-                        "Height": 20,
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Variable": "IntesisFANSP",
-                        "Value": "AUTO"
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "SetCurrentFanSpeed",
-                        "Parameters": [{
-                            "Name": "NewFanSpeed",
-                            "Value": 0
-                        }]
-                    },
-                    "ControlCode": "thermostat_fanmode_auto"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "wmp_fan_slower",
-                        "text": "&darr;"
-                    },
-                    "Display": {
-                        "Top": 120,
-                        "Left": 120,
-                        "Width": 40,
-                        "Height": 20
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "FanSpeedDown",
-                        "Parameters": []
-                    },
-                    "ControlCode": "thermostat_fan_down"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "wmp_fan_faster",
-                        "text": "&uarr;"
-                    },
-                    "Display": {
-                        "Top": 120,
-                        "Left": 170,
-                        "Width": 40,
-                        "Height": 20
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "FanSpeedUp",
-                        "Parameters": []
-                    },
-                    "ControlCode": "thermostat_fan_up"
-                },
-                {
-                    "ControlGroup": 4,
-                    "ControlType": "variable",
-                    "top": "0.2",
-                    "left": 0,
-                    "LabelSymbol": {
-                        "lang_tag": "heater_label_symbol",
-                        "text": "&deg;_TEMPERATURE_FORMAT_"
-                    },
-                    "Display": {
-                        "Top": 180,
-                        "Left": 30,
-                        "Width": 100,
-                        "Height": 25,
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Variable": "DisplayTemperature"
-                    }
-                },
-                {
-                    "ControlGroup": 4,
-                    "ControlType": "line_break"
-                },
-                {
-                    "ControlGroup": 4,
-                    "ControlType": "variable",
-                    "top": "0.5",
-                    "left": 0,
-                    "LabelSymbol": {
-                        "lang_tag": "wmp_status",
-                        "text": "Status"
-                    },
-                    "Display": {
-                        "Top": 0,
-                        "Left": 150,
-                        "Width": 320,
-                        "Height": 25,
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Variable": "DisplayStatus"
-                    }
-                },
+	"default_icon": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
+	"state_icons": [{
+			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
+			"conditions": [{
+				"service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+				"variable": "Failure",
+				"operator": "==",
+				"value": 1
+			}]
+		}, {
+			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_heat.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "HeatOn"
+			}]
+		},
+		{
+			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_cool.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "CoolOn"
+			}]
+		},
+		{
+			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "AutoChangeOver"
+			}]
+		},
+		{
+			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "FanOnly"
+			}]
+		},
+		{
+			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_cool.png",
+			"conditions": [{
+				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+				"variable": "ModeStatus",
+				"operator": "==",
+				"value": "Dry"
+			}]
+		}
+	],
+	"x": 2,
+	"y": 4,
+	"inScene": 1,
+	"Tabs": [{
+			"Label": {
+				"lang_tag": "tabname_control",
+				"text": "Control"
+			},
+			"Position": 0,
+			"TabType": "flash",
+			"top_navigation_tab": 1,
+			"ControlGroup": [{
+					"id": 1,
+					"scenegroup": 1
+				},
+				{
+					"id": 2,
+					"scenegroup": 2
+				},
+				{
+					"id": 3,
+					"scenegroup": 3
+				},
+				{
+					"id": 4,
+					"scenegroup": 4
+				}
+			],
+			"SceneGroup": [{
+					"id": 1,
+					"top": 0,
+					"left": 0,
+					"x": 1,
+					"y": 4
+				},
+				{
+					"id": 2,
+					"top": 0,
+					"left": 2,
+					"x": 2,
+					"y": 3
+				},
+				{
+					"id": 3,
+					"top": 0,
+					"left": "2.5",
+					"x": "0.5",
+					"y": 3
+				},
+				{
+					"id": 4,
+					"top": 3,
+					"left": 2,
+					"x": 1,
+					"y": 1
+				}
+			],
+			"Control": [{
+					"ControlType": "label",
+					"top": 0,
+					"left": 0,
+					"Label": {
+						"lang_tag": "wmp_mode",
+						"text": "Mode"
+					},
+					"Display": {
+						"Top": 0,
+						"Left": 30,
+						"Width": 100,
+						"Height": 25
+					}
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "button",
+					"top": 0,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_off",
+						"text": "Off"
+					},
+					"Display": {
+						"Top": 30,
+						"Left": 50,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "Off"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "Off"
+						}]
+					},
+					"ControlCode": "thermostat_mode_off"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "button",
+					"top": 1,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_auto",
+						"text": "Auto"
+					},
+					"Display": {
+						"Top": 60,
+						"Left": 50,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "AutoChangeOver"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "AutoChangeOver"
+						}]
+					},
+					"ControlCode": "thermostat_mode_auto"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "line_break"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_cool",
+						"text": "Cool"
+					},
+					"Display": {
+						"Top": 30,
+						"Left": 150,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "CoolOn"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "CoolOn"
+						}]
+					},
+					"ControlCode": "thermostat_mode_cool"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "button",
+					"top": 3,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_heat",
+						"text": "Heat"
+					},
+					"Display": {
+						"Top": 60,
+						"Left": 150,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "HeatOn"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "HeatOn"
+						}]
+					},
+					"ControlCode": "thermostat_mode_heat"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "line_break"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_fan",
+						"text": "Fan"
+					},
+					"Display": {
+						"Top": 30,
+						"Left": 250,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "FanOnly"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "FanOnly"
+						}]
+					},
+					"ControlCode": "thermostat_mode_fanonly"
+				},
+				{
+					"ControlGroup": 1,
+					"ControlType": "button",
+					"top": 4,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_dry",
+						"text": "Dry"
+					},
+					"Display": {
+						"Top": 60,
+						"Left": 250,
+						"Width": 75,
+						"Height": 20,
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Variable": "ModeTarget",
+						"Value": "Dry"
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+						"Action": "SetModeTarget",
+						"Parameters": [{
+							"Name": "NewModeTarget",
+							"Value": "Dry"
+						}]
+					},
+					"ControlCode": "thermostat_mode_dry"
+				},
+				{
+					"ControlGroup": 2,
+					"ControlType": "spinner_horizontal",
+					"top": 0,
+					"left": 2,
+					"ID": "NewSP",
+					"Style": "numeric",
+					"LabelUp": {
+						"lang_tag": "temperature_increase",
+						"text": "increase"
+					},
+					"LabelDown": {
+						"lang_tag": "temperature_decrease",
+						"text": "decrease"
+					},
+					"LabelSymbol": {
+						"lang_tag": "heater_label_symbol",
+						"text": "&deg;F"
+					},
+					"Display": {
+						"Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
+						"Variable": "CurrentSetpoint",
+						"MinValue": 60,
+						"MaxValue": 90,
+						"Step": 0.5,
+						"Editable": 1,
+						"Top": 0,
+						"Left": 360,
+						"Width": 64,
+						"Height": 64
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
+						"Action": "SetCurrentSetpoint",
+						"ActionArgumentName": "NewCurrentSetpoint"
+					},
+					"ControlCode": "thermostat_set_temp"
+				},
+				{
+					"ControlType": "label",
+					"HorizontalMultiplier": "0.5",
+					"top": "0.1",
+					"left": 0,
+					"text_align": "left",
+					"Label": {
+						"lang_tag": "wmp_fanspeed",
+						"text": "Fan Speed"
+					},
+					"Display": {
+						"Top": 90,
+						"Left": 30,
+						"Width": 80,
+						"Height": 25
+					}
+				},
+				{
+					"ControlType": "variable",
+					"HorizontalMultiplier": "0.5",
+					"top": "0.1",
+					"left": 1,
+					"Display": {
+						"Top": 90,
+						"Left": 120,
+						"Width": 120,
+						"Height": 25,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "IntesisFANSP"
+					}
+				},
+				{
+					"ControlType": "button",
+					"top": 1,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_auto",
+						"text": "Auto"
+					},
+					"Display": {
+						"Top": 120,
+						"Left": 50,
+						"Width": 60,
+						"Height": 20,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "IntesisFANSP",
+						"Value": "AUTO"
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "SetCurrentFanSpeed",
+						"Parameters": [{
+							"Name": "NewFanSpeed",
+							"Value": 0
+						}]
+					},
+					"ControlCode": "thermostat_fanmode_auto"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "wmp_fan_slower",
+						"text": "&darr;"
+					},
+					"Display": {
+						"Top": 120,
+						"Left": 120,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "FanSpeedDown",
+						"Parameters": []
+					},
+					"ControlCode": "thermostat_fan_down"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "wmp_fan_faster",
+						"text": "&uarr;"
+					},
+					"Display": {
+						"Top": 120,
+						"Left": 170,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "FanSpeedUp",
+						"Parameters": []
+					},
+					"ControlCode": "thermostat_fan_up"
+				},
+				{
+					"ControlGroup": 4,
+					"ControlType": "variable",
+					"top": "0.2",
+					"left": 0,
+					"LabelSymbol": {
+						"lang_tag": "heater_label_symbol",
+						"text": "&deg;_TEMPERATURE_FORMAT_"
+					},
+					"Display": {
+						"Top": 180,
+						"Left": 30,
+						"Width": 100,
+						"Height": 25,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "DisplayTemperature"
+					}
+				},
+				{
+					"ControlGroup": 4,
+					"ControlType": "line_break"
+				},
+				{
+					"ControlGroup": 4,
+					"ControlType": "variable",
+					"top": "0.5",
+					"left": 0,
+					"LabelSymbol": {
+						"lang_tag": "wmp_status",
+						"text": "Status"
+					},
+					"Display": {
+						"Top": 0,
+						"Left": 150,
+						"Width": 320,
+						"Height": 25,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "DisplayStatus"
+					}
+				},
 
-                {
-                    "ControlType": "label",
-                    "top": "0.1",
-                    "left": 0,
-                    "text_align": "left",
-                    "Label": {
-                        "lang_tag": "wmp_vanes",
-                        "text": "Vanes"
-                    },
-                    "Display": {
-                        "Top": 90,
-                        "Left": 250,
-                        "Width": 130,
-                        "Height": 25
-                    }
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_vanes_up",
-                        "text": "&uarr;"
-                    },
-                    "Display": {
-                        "Top": 120,
-                        "Left": 295,
-                        "Width": 40,
-                        "Height": 20
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "VaneUp",
-                        "Parameters": []
-                    },
-                    "ControlCode": "thermostat_vanes_up"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_vanes_left",
-                        "text": "&larr;"
-                    },
-                    "Display": {
-                        "Top": 150,
-                        "Left": 270,
-                        "Width": 40,
-                        "Height": 20
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "VaneLeft",
-                        "Parameters": []
-                    },
-                    "ControlCode": "thermostat_vanes_left"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_vanes_right",
-                        "text": "&rarr;"
-                    },
-                    "Display": {
-                        "Top": 150,
-                        "Left": 320,
-                        "Width": 40,
-                        "Height": 20
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "VaneRight",
-                        "Parameters": []
-                    },
-                    "ControlCode": "thermostat_vanes_right"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_vanes_down",
-                        "text": "&darr;"
-                    },
-                    "Display": {
-                        "Top": 180,
-                        "Left": 295,
-                        "Width": 40,
-                        "Height": 20
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "VaneDown",
-                        "Parameters": []
-                    },
-                    "ControlCode": "thermostat_vanes_down"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_vaneud_auto",
-                        "text": "&uarr;Auto&darr;"
-                    },
-                    "Display": {
-                        "Top": 210,
-                        "Left": 250,
-                        "Width": 60,
-                        "Height": 20,
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Variable": "IntesisVANEUD",
-                        "Value": "AUTO"
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "SetUpDownVanePosition",
-                        "Parameters": [{
-                            "Name": "NewPosition",
-                            "Value": 0
-                        }]
-                    },
-                    "ControlCode": "thermostat_vanes_autoupdown"
-                },
-                {
-                    "ControlType": "button",
-                    "top": 2,
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "cmd_vanelr_auto",
-                        "text": "&larr;Auto&rarr;"
-                    },
-                    "Display": {
-                        "Top": 210,
-                        "Left": 320,
-                        "Width": 60,
-                        "Height": 20,
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Variable": "IntesisVANELR",
-                        "Value": "AUTO"
-                    },
-                    "Command": {
-                        "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-                        "Action": "SetLeftRightVanePosition",
-                        "Parameters": [{
-                            "Name": "NewPosition",
-                            "Value": 0
-                        }]
-                    },
-                    "ControlCode": "thermostat_vanes_autoleftright"
-                },
+				{
+					"ControlType": "label",
+					"top": "0.1",
+					"left": 0,
+					"text_align": "left",
+					"Label": {
+						"lang_tag": "wmp_vanes",
+						"text": "Vanes"
+					},
+					"Display": {
+						"Top": 90,
+						"Left": 250,
+						"Width": 130,
+						"Height": 25
+					}
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_vanes_up",
+						"text": "&uarr;"
+					},
+					"Display": {
+						"Top": 120,
+						"Left": 295,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "VaneUp",
+						"Parameters": []
+					},
+					"ControlCode": "thermostat_vanes_up"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_vanes_left",
+						"text": "&larr;"
+					},
+					"Display": {
+						"Top": 150,
+						"Left": 270,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "VaneLeft",
+						"Parameters": []
+					},
+					"ControlCode": "thermostat_vanes_left"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_vanes_right",
+						"text": "&rarr;"
+					},
+					"Display": {
+						"Top": 150,
+						"Left": 320,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "VaneRight",
+						"Parameters": []
+					},
+					"ControlCode": "thermostat_vanes_right"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_vanes_down",
+						"text": "&darr;"
+					},
+					"Display": {
+						"Top": 180,
+						"Left": 295,
+						"Width": 40,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "VaneDown",
+						"Parameters": []
+					},
+					"ControlCode": "thermostat_vanes_down"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_vaneud_auto",
+						"text": "&uarr;Auto&darr;"
+					},
+					"Display": {
+						"Top": 210,
+						"Left": 250,
+						"Width": 60,
+						"Height": 20,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "IntesisVANEUD",
+						"Value": "AUTO"
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "SetUpDownVanePosition",
+						"Parameters": [{
+							"Name": "NewPosition",
+							"Value": 0
+						}]
+					},
+					"ControlCode": "thermostat_vanes_autoupdown"
+				},
+				{
+					"ControlType": "button",
+					"top": 2,
+					"left": 0,
+					"Label": {
+						"lang_tag": "cmd_vanelr_auto",
+						"text": "&larr;Auto&rarr;"
+					},
+					"Display": {
+						"Top": 210,
+						"Left": 320,
+						"Width": 60,
+						"Height": 20,
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "IntesisVANELR",
+						"Value": "AUTO"
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "SetLeftRightVanePosition",
+						"Parameters": [{
+							"Name": "NewPosition",
+							"Value": 0
+						}]
+					},
+					"ControlCode": "thermostat_vanes_autoleftright"
+				},
 
-                {
-                    "ControlType": "label",
-                    "top": "0.2",
-                    "left": 0,
-                    "Label": {
-                        "lang_tag": "wmp_about",
-                        "text": "Intesis WMP Gateway plug-in v2.3 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
-                    },
-                    "Display": {
-                        "Top": 270,
-                        "Left": 30,
-                        "Width": 300,
-                        "Height": 25
-                    }
-                }
-            ],
-            "Conditions": []
-        },
-        {
-            "Label": {
-                "lang_tag": "ui7_advanced",
-                "text": "Advanced"
-            },
-            "Position": 1,
-            "TabType": "javascript",
-            "ScriptName": "shared.js",
-            "Function": "advanced_device"
-        },
-        {
-            "Label": {
-                "lang_tag": "ui7_logs",
-                "text": "Logs"
-            },
-            "Position": 2,
-            "TabType": "javascript",
-            "ScriptName": "shared.js",
-            "Function": "device_logs"
-        },
-        {
-            "Label": {
-                "lang_tag": "ui7_notifications",
-                "text": "Notifications"
-            },
-            "Position": 3,
-            "TabType": "javascript",
-            "ScriptName": "shared.js",
-            "Function": "device_notifications"
-        },
-        {
-            "Label": {
-                "lang_tag": "ui7_device_scenes",
-                "text": "Scenes"
-            },
-            "Position": 4,
-            "TabType": "javascript",
-            "ScriptName": "shared.js",
-            "Function": "device_scenes"
-        }
-    ],
-    "eventList2": [{
-            "id": 1,
-            "label": {
-                "lang_tag": "thermostat_mode_changes",
-                "text": "Thermostat Mode Changes"
-            },
-            "serviceId": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
-            "argumentList": [{
-                "id": 1,
-                "dataType": "string",
-                "defaultValue": "",
-                "allowedValueList": [{
-                        "Off": "Off",
-                        "HumanFriendlyText": {
-                            "lang_tag": "wmp_turned_off",
-                            "text": "_DEVICE_NAME_ is turned off"
-                        }
-                    },
-                    {
-                        "Cool": "CoolOn",
-                        "HumanFriendlyText": {
-                            "lang_tag": "wmp_set_to_cool",
-                            "text": "_DEVICE_NAME_ mode changed to cool"
-                        }
-                    },
-                    {
-                        "Heat": "HeatOn",
-                        "HumanFriendlyText": {
-                            "lang_tag": "wmp_set_to_heat",
-                            "text": "_DEVICE_NAME_ mode changed to heat"
-                        }
-                    },
-                    {
-                        "Auto": "AutoChangeOver",
-                        "HumanFriendlyText": {
-                            "lang_tag": "wmp_set_to_auto",
-                            "text": "_DEVICE_NAME_ mode changed to auto"
-                        }
-                    },
-                    {
-                        "Fan": "FanOnly",
-                        "HumanFriendlyText": {
-                            "lang_tag": "wmp_set_to_fanonly",
-                            "text": "_DEVICE_NAME_ mode changed to fan only"
-                        }
-                    },
-                    {
-                        "Dry": "Dry",
-                        "HumanFriendlyText": {
-                            "lang_tag": "wmp_set_to_dry",
-                            "text": "_DEVICE_NAME_ mode changed to dry"
-                        }
-                    }
-                ],
-                "name": "ModeTarget",
-                "comparisson": "=",
-                "prefix": {
-                    "lang_tag": "mode",
-                    "text": "Mode"
-                },
-                "suffix": {}
-            }]
-        },
-        {
-            "id": 2,
-            "label": {
-                "lang_tag": "ambient_temperature_goes_above",
-                "text": "Ambient temperature goes above"
-            },
-            "serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
-            "norepeat": 1,
-            "argumentList": [{
-                "id": 1,
-                "dataType": "i4",
-                "name": "CurrentTemperature",
-                "comparisson": ">",
-                "prefix": {
-                    "lang_tag": "temperature",
-                    "text": "Temperature"
-                },
-                "suffix": {
-                    "lang_tag": "degrees",
-                    "text": "degrees"
-                },
-                "HumanFriendlyText": {
-                    "lang_tag": "hft_ambient_temperature_goes_above",
-                    "text": "_DEVICE_NAME_ ambient temperature goes above _ARGUMENT_VALUE_ degrees"
-                }
-            }]
-        },
-        {
-            "id": 3,
-            "label": {
-                "lang_tag": "ambient_temperature_goes_below",
-                "text": "Ambient temperature goes below"
-            },
-            "serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
-            "norepeat": 1,
-            "argumentList": [{
-                "id": 1,
-                "dataType": "i4",
-                "name": "CurrentTemperature",
-                "comparisson": "<",
-                "prefix": {
-                    "lang_tag": "temperature",
-                    "text": "Temperature"
-                },
-                "suffix": {
-                    "lang_tag": "degrees",
-                    "text": "degrees"
-                },
-                "HumanFriendlyText": {
-                    "lang_tag": "hft_ambient_temperature_goes_below",
-                    "text": "_DEVICE_NAME_ ambient temperature goes below _ARGUMENT_VALUE_ degrees"
-                }
-            }]
-        },
-        {
-            "id": 4,
-            "label": {
-                "lang_tag": "thermostat_setpoint_goes_above",
-                "text": "Thermostat setpoint goes above"
-            },
-            "serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-            "argumentList": [{
-                "id": 1,
-                "dataType": "i4",
-                "name": "CurrentSetpoint",
-                "comparisson": ">",
-                "prefix": {
-                    "lang_tag": "temperature",
-                    "text": "Temperature"
-                },
-                "suffix": {
-                    "lang_tag": "degrees",
-                    "text": "degrees"
-                },
-                "HumanFriendlyText": {
-                    "lang_tag": "tb_wmp_setpoint_above",
-                    "text": "_DEVICE_NAME_ setpoint goes above _ARGUMENT_VALUE_ degrees"
-                }
-            }]
-        },
-        {
-            "id": 5,
-            "label": {
-                "lang_tag": "thermostat_setpoint_goes_below",
-                "text": "Thermostat setpoint goes below"
-            },
-            "serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-            "argumentList": [{
-                "id": 1,
-                "dataType": "i4",
-                "name": "CurrentSetpoint",
-                "comparisson": "<",
-                "prefix": {
-                    "lang_tag": "temperature",
-                    "text": "Temperature"
-                },
-                "suffix": {
-                    "lang_tag": "degrees",
-                    "text": "degrees"
-                },
-                "HumanFriendlyText": {
-                    "lang_tag": "tb_wmp_setpoint_below",
-                    "text": "_DEVICE_NAME_ setpoint goes below _ARGUMENT_VALUE_ degrees"
-                }
-            }]
-        },
-        {
-            "id": 6,
-            "label": {
-                "lang_tag": "wmp_failed",
-                "text": "Communication Failure"
-            },
-            "serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-            "serviceStateTable": {
-                "Failure": {
-                    "value": 0,
-                    "comparisson": ">"
-                }
-            },
-            "HumanFriendlyText": {
-                "lang_tag": "tb_wmp_commfail",
-                "text": "_DEVICE_NAME_ loses communication with the device"
-            }
-        },
-        {
-            "id": 7,
-            "label": {
-                "lang_tag": "wmp_recovery",
-                "text": "Communication Restore"
-            },
-            "serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-            "serviceStateTable": {
-                "Failure": {
-                    "value": 0,
-                    "comparisson": "="
-                }
-            },
-            "HumanFriendlyText": {
-                "lang_tag": "tb_wmp_commrestore",
-                "text": "_DEVICE_NAME_ restores communication with the device"
-            }
-        }
-    ],
-    "device_type": "urn:schemas-toggledbits-com:device:IntesisWMPDevice:1"
+				{
+					"ControlType": "label",
+					"top": "0.2",
+					"left": 0,
+					"Label": {
+						"lang_tag": "wmp_about",
+						"text": "Intesis WMP Gateway plug-in v2.3develop-19204 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+					},
+					"Display": {
+						"Top": 270,
+						"Left": 30,
+						"Width": 300,
+						"Height": 25
+					}
+				}
+			],
+			"Conditions": []
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_advanced",
+				"text": "Advanced"
+			},
+			"Position": 1,
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "advanced_device"
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_logs",
+				"text": "Logs"
+			},
+			"Position": 2,
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "device_logs"
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_notifications",
+				"text": "Notifications"
+			},
+			"Position": 3,
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "device_notifications"
+		},
+		{
+			"Label": {
+				"lang_tag": "ui7_device_scenes",
+				"text": "Scenes"
+			},
+			"Position": 4,
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "device_scenes"
+		}
+	],
+	"eventList2": [{
+			"id": 1,
+			"label": {
+				"lang_tag": "thermostat_mode_changes",
+				"text": "Thermostat Mode Changes"
+			},
+			"serviceId": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "string",
+				"defaultValue": "",
+				"allowedValueList": [{
+						"Off": "Off",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_turned_off",
+							"text": "_DEVICE_NAME_ is turned off"
+						}
+					},
+					{
+						"Cool": "CoolOn",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_cool",
+							"text": "_DEVICE_NAME_ mode changed to cool"
+						}
+					},
+					{
+						"Heat": "HeatOn",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_heat",
+							"text": "_DEVICE_NAME_ mode changed to heat"
+						}
+					},
+					{
+						"Auto": "AutoChangeOver",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_auto",
+							"text": "_DEVICE_NAME_ mode changed to auto"
+						}
+					},
+					{
+						"Fan": "FanOnly",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_fanonly",
+							"text": "_DEVICE_NAME_ mode changed to fan only"
+						}
+					},
+					{
+						"Dry": "Dry",
+						"HumanFriendlyText": {
+							"lang_tag": "wmp_set_to_dry",
+							"text": "_DEVICE_NAME_ mode changed to dry"
+						}
+					}
+				],
+				"name": "ModeTarget",
+				"comparisson": "=",
+				"prefix": {
+					"lang_tag": "mode",
+					"text": "Mode"
+				},
+				"suffix": {}
+			}]
+		},
+		{
+			"id": 2,
+			"label": {
+				"lang_tag": "ambient_temperature_goes_above",
+				"text": "Ambient temperature goes above"
+			},
+			"serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
+			"norepeat": 1,
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentTemperature",
+				"comparisson": ">",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "hft_ambient_temperature_goes_above",
+					"text": "_DEVICE_NAME_ ambient temperature goes above _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 3,
+			"label": {
+				"lang_tag": "ambient_temperature_goes_below",
+				"text": "Ambient temperature goes below"
+			},
+			"serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
+			"norepeat": 1,
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentTemperature",
+				"comparisson": "<",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "hft_ambient_temperature_goes_below",
+					"text": "_DEVICE_NAME_ ambient temperature goes below _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 4,
+			"label": {
+				"lang_tag": "thermostat_setpoint_goes_above",
+				"text": "Thermostat setpoint goes above"
+			},
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentSetpoint",
+				"comparisson": ">",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "tb_wmp_setpoint_above",
+					"text": "_DEVICE_NAME_ setpoint goes above _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 5,
+			"label": {
+				"lang_tag": "thermostat_setpoint_goes_below",
+				"text": "Thermostat setpoint goes below"
+			},
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+			"argumentList": [{
+				"id": 1,
+				"dataType": "i4",
+				"name": "CurrentSetpoint",
+				"comparisson": "<",
+				"prefix": {
+					"lang_tag": "temperature",
+					"text": "Temperature"
+				},
+				"suffix": {
+					"lang_tag": "degrees",
+					"text": "degrees"
+				},
+				"HumanFriendlyText": {
+					"lang_tag": "tb_wmp_setpoint_below",
+					"text": "_DEVICE_NAME_ setpoint goes below _ARGUMENT_VALUE_ degrees"
+				}
+			}]
+		},
+		{
+			"id": 6,
+			"label": {
+				"lang_tag": "wmp_failed",
+				"text": "Communication Failure"
+			},
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+			"serviceStateTable": {
+				"Failure": {
+					"value": 0,
+					"comparisson": ">"
+				}
+			},
+			"HumanFriendlyText": {
+				"lang_tag": "tb_wmp_commfail",
+				"text": "_DEVICE_NAME_ loses communication with the device"
+			}
+		},
+		{
+			"id": 7,
+			"label": {
+				"lang_tag": "wmp_recovery",
+				"text": "Communication Restore"
+			},
+			"serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+			"serviceStateTable": {
+				"Failure": {
+					"value": 0,
+					"comparisson": "="
+				}
+			},
+			"HumanFriendlyText": {
+				"lang_tag": "tb_wmp_commrestore",
+				"text": "_DEVICE_NAME_ restores communication with the device"
+			}
+		}
+	],
+	"device_type": "urn:schemas-toggledbits-com:device:IntesisWMPDevice:1"
 }
