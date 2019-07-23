@@ -52,9 +52,9 @@ local string = require("string")
 local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "2.2"
+local _PLUGIN_VERSION = "2.3"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
-local _CONFIGVERSION = 020200
+local _CONFIGVERSION = 020201
 
 local debugMode = false
 local traceMode = false
@@ -622,13 +622,13 @@ end
 function handleACK( unit, segs, pdev )
     D("handleACK(%1,%2,%3)", unit, segs, pdev)
     -- We've been heard; do nothing
-    D("handMessage() ACK received, last command %1", lastCommand)
+    D("handMessage() ACK received, last command %1", devData[pdev].lastCommand)
 end
 
 -- Handle ERR
 function handleERR( unit, segs, pdev )
     D("handleERR(%1,%2,%3)", unit, segs, pdev)
-    L("WMP device returned ERR after %1", lastCommand)
+    L("WMP device returned ERR after %1", devData[pdev].lastCommand)
 end
 
 -- Handle CLOSE, the server signalling that it is closing the connection.
@@ -934,7 +934,7 @@ local function deviceRunOnce( dev, parentDev )
         end
         
         luup.variable_set(HADEVICE_SID, "ModeSetting", "1:;2:;3:;4:", dev)
-        luup.variable_set(HADEVICE_SID, "Commands", "thermostat_mode_off,thermostat_mode_heat,thermostat_mode_cool,thermostat_mode_auto", dev)
+		luup.variable_set(HADEVICE_SID, "Commands", "thermostat_mode_off,thermostat_mode_auto,thermostat_mode_cool,thermostat_mode_heat,thermostat_mode_fanonly,thermostat_mode_dry,thermostat_set_temp,thermostat_fanstate,thermostat_fanmode_auto,thermostat_fan_down,thermostat_fan_up,thermostat_vanes_up,thermostat_vanes_left,thermostat_vanes_right,thermostat_vanes_down,thermostat_vanes_autoupdown,thermostat_vanes_autoleftright", dev)
         
         luup.variable_set(DEVICESID, "Version", _CONFIGVERSION, dev)
         return
@@ -946,6 +946,10 @@ local function deviceRunOnce( dev, parentDev )
         luup.variable_set(DEVICESID, "TCPPort", "", dev )
     end
 --]]
+
+	if rev < 020201 then
+		luup.variable_set(HADEVICE_SID, "Commands", "thermostat_mode_off,thermostat_mode_auto,thermostat_mode_cool,thermostat_mode_heat,thermostat_mode_fanonly,thermostat_mode_dry,thermostat_set_temp,thermostat_fanstate,thermostat_fanmode_auto,thermostat_fan_down,thermostat_fan_up,thermostat_vanes_up,thermostat_vanes_left,thermostat_vanes_right,thermostat_vanes_down,thermostat_vanes_autoupdown,thermostat_vanes_autoleftright", dev)
+	end
 
     -- No matter what happens above, if our versions don't match, force that here/now.
     if (rev ~= _CONFIGVERSION) then

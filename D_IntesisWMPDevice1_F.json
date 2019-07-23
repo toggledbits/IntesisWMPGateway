@@ -6,7 +6,7 @@
                 "service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
                 "variable": "Failure",
                 "operator": "==",
-                "value": "1"
+                "value": 1
             }]
         }, {
             "img": "https://www.toggledbits.com/assets/intesis/wmp_mode_heat.png",
@@ -54,67 +54,67 @@
             }]
         }
     ],
-    "x": "2",
-    "y": "4",
-    "inScene": "1",
+    "x": 2,
+    "y": 4,
+    "inScene": 1,
     "Tabs": [{
             "Label": {
                 "lang_tag": "tabname_control",
                 "text": "Control"
             },
-            "Position": "0",
+            "Position": 0,
             "TabType": "flash",
             "top_navigation_tab": 1,
             "ControlGroup": [{
-                    "id": "1",
-                    "scenegroup": "1"
+                    "id": 1,
+                    "scenegroup": 1
                 },
                 {
-                    "id": "2",
-                    "scenegroup": "2"
+                    "id": 2,
+                    "scenegroup": 2
                 },
                 {
-                    "id": "3",
-                    "scenegroup": "3"
+                    "id": 3,
+                    "scenegroup": 3
                 },
                 {
-                    "id": "4",
-                    "scenegroup": "4"
+                    "id": 4,
+                    "scenegroup": 4
                 }
             ],
             "SceneGroup": [{
-                    "id": "1",
-                    "top": "0",
-                    "left": "0",
-                    "x": "1",
-                    "y": "4"
+                    "id": 1,
+                    "top": 0,
+                    "left": 0,
+                    "x": 1,
+                    "y": 4
                 },
                 {
-                    "id": "2",
-                    "top": "0",
-                    "left": "2",
-                    "x": "2",
-                    "y": "3"
+                    "id": 2,
+                    "top": 0,
+                    "left": 2,
+                    "x": 2,
+                    "y": 3
                 },
                 {
-                    "id": "3",
-                    "top": "0",
+                    "id": 3,
+                    "top": 0,
                     "left": "2.5",
                     "x": "0.5",
-                    "y": "3"
+                    "y": 3
                 },
                 {
-                    "id": "4",
-                    "top": "3",
-                    "left": "2",
-                    "x": "1",
-                    "y": "1"
+                    "id": 4,
+                    "top": 3,
+                    "left": 2,
+                    "x": 1,
+                    "y": 1
                 }
             ],
             "Control": [{
                     "ControlType": "label",
-                    "top": "0",
-                    "left": "0",
+                    "top": 0,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "wmp_mode",
                         "text": "Mode"
@@ -127,10 +127,10 @@
                     }
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "button",
-                    "top": "0",
-                    "left": "0",
+                    "top": 0,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_off",
                         "text": "Off"
@@ -152,13 +152,13 @@
                             "Value": "Off"
                         }]
                     },
-                    "ControlCode": "hvac_off"
+                    "ControlCode": "thermostat_mode_off"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "button",
-                    "top": "1",
-                    "left": "0",
+                    "top": 1,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_auto",
                         "text": "Auto"
@@ -180,17 +180,17 @@
                             "Value": "AutoChangeOver"
                         }]
                     },
-                    "ControlCode": "hvac_auto"
+                    "ControlCode": "thermostat_mode_auto"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "line_break"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_cool",
                         "text": "Cool"
@@ -212,13 +212,13 @@
                             "Value": "CoolOn"
                         }]
                     },
-                    "ControlCode": "hvac_cool"
+                    "ControlCode": "thermostat_mode_cool"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "button",
-                    "top": "3",
-                    "left": "0",
+                    "top": 3,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_heat",
                         "text": "Heat"
@@ -240,17 +240,17 @@
                             "Value": "HeatOn"
                         }]
                     },
-                    "ControlCode": "hvac_heat"
+                    "ControlCode": "thermostat_mode_heat"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "line_break"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_fan",
                         "text": "Fan"
@@ -272,13 +272,13 @@
                             "Value": "FanOnly"
                         }]
                     },
-                    "ControlCode": "hvac_fanonly"
+                    "ControlCode": "thermostat_mode_fanonly"
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": 1,
                     "ControlType": "button",
-                    "top": "4",
-                    "left": "0",
+                    "top": 4,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_dry",
                         "text": "Dry"
@@ -300,13 +300,13 @@
                             "Value": "Dry"
                         }]
                     },
-                    "ControlCode": "hvac_dry"
+                    "ControlCode": "thermostat_mode_dry"
                 },
                 {
-                    "ControlGroup": "2",
+                    "ControlGroup": 2,
                     "ControlType": "spinner_horizontal",
-                    "top": "0",
-                    "left": "2",
+                    "top": 0,
+                    "left": 2,
                     "ID": "NewSP",
                     "Style": "numeric",
                     "LabelUp": {
@@ -330,21 +330,21 @@
                         "Editable": 1,
                         "Top": 0,
                         "Left": 360,
-                        "Width": 100,
-                        "Height": 25
+                        "Width": 64,
+                        "Height": 64
                     },
                     "Command": {
                         "Service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
                         "Action": "SetCurrentSetpoint",
                         "ActionArgumentName": "NewCurrentSetpoint"
                     },
-                    "ControlCode": "intesis_setpoint"
+                    "ControlCode": "thermostat_set_temp"
                 },
                 {
                     "ControlType": "label",
                     "HorizontalMultiplier": "0.5",
                     "top": "0.1",
-                    "left": "0",
+                    "left": 0,
                     "text_align": "left",
                     "Label": {
                         "lang_tag": "wmp_fanspeed",
@@ -355,14 +355,13 @@
                         "Left": 30,
                         "Width": 80,
                         "Height": 25
-                    },
-                    "ControlCode": "fan_label"
+                    }
                 },
                 {
                     "ControlType": "variable",
                     "HorizontalMultiplier": "0.5",
                     "top": "0.1",
-                    "left": "1",
+                    "left": 1,
                     "Display": {
                         "Top": 90,
                         "Left": 120,
@@ -370,13 +369,12 @@
                         "Height": 25,
                         "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
                         "Variable": "IntesisFANSP"
-                    },
-                    "ControlCode": "hvac_fanstate"
+                    }
                 },
                 {
                     "ControlType": "button",
-                    "top": "1",
-                    "left": "0",
+                    "top": 1,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_auto",
                         "text": "Auto"
@@ -395,15 +393,15 @@
                         "Action": "SetCurrentFanSpeed",
                         "Parameters": [{
                             "Name": "NewFanSpeed",
-                            "Value": "0"
+                            "Value": 0
                         }]
                     },
-                    "ControlCode": "fan_auto"
+                    "ControlCode": "thermostat_fanmode_auto"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "wmp_fan_slower",
                         "text": "&darr;"
@@ -419,12 +417,12 @@
                         "Action": "FanSpeedDown",
                         "Parameters": []
                     },
-                    "ControlCode": "fan_slower"
+                    "ControlCode": "thermostat_fan_down"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "wmp_fan_faster",
                         "text": "&uarr;"
@@ -440,13 +438,13 @@
                         "Action": "FanSpeedUp",
                         "Parameters": []
                     },
-                    "ControlCode": "fan_faster"
+                    "ControlCode": "thermostat_fan_up"
                 },
                 {
-                    "ControlGroup": "4",
+                    "ControlGroup": 4,
                     "ControlType": "variable",
                     "top": "0.2",
-                    "left": "0",
+                    "left": 0,
                     "LabelSymbol": {
                         "lang_tag": "heater_label_symbol",
                         "text": "&deg;_TEMPERATURE_FORMAT_"
@@ -458,18 +456,17 @@
                         "Height": 25,
                         "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
                         "Variable": "DisplayTemperature"
-                    },
-                    "ControlCode": "wmp_temp"
+                    }
                 },
                 {
-                    "ControlGroup": "4",
+                    "ControlGroup": 4,
                     "ControlType": "line_break"
                 },
                 {
-                    "ControlGroup": "4",
+                    "ControlGroup": 4,
                     "ControlType": "variable",
                     "top": "0.5",
-                    "left": "0",
+                    "left": 0,
                     "LabelSymbol": {
                         "lang_tag": "wmp_status",
                         "text": "Status"
@@ -481,14 +478,13 @@
                         "Height": 25,
                         "Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
                         "Variable": "DisplayStatus"
-                    },
-                    "ControlCode": "wmp_status"
+                    }
                 },
 
                 {
                     "ControlType": "label",
                     "top": "0.1",
-                    "left": "0",
+                    "left": 0,
                     "text_align": "left",
                     "Label": {
                         "lang_tag": "wmp_vanes",
@@ -499,13 +495,12 @@
                         "Left": 250,
                         "Width": 130,
                         "Height": 25
-                    },
-                    "ControlCode": "vanes_label"
+                    }
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_vanes_up",
                         "text": "&uarr;"
@@ -521,12 +516,12 @@
                         "Action": "VaneUp",
                         "Parameters": []
                     },
-                    "ControlCode": "vane_up"
+                    "ControlCode": "thermostat_vanes_up"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_vanes_left",
                         "text": "&larr;"
@@ -542,12 +537,12 @@
                         "Action": "VaneLeft",
                         "Parameters": []
                     },
-                    "ControlCode": "vane_left"
+                    "ControlCode": "thermostat_vanes_left"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_vanes_right",
                         "text": "&rarr;"
@@ -563,12 +558,12 @@
                         "Action": "VaneRight",
                         "Parameters": []
                     },
-                    "ControlCode": "vane_right"
+                    "ControlCode": "thermostat_vanes_right"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_vanes_down",
                         "text": "&darr;"
@@ -584,12 +579,12 @@
                         "Action": "VaneDown",
                         "Parameters": []
                     },
-                    "ControlCode": "vane_down"
+                    "ControlCode": "thermostat_vanes_down"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_vaneud_auto",
                         "text": "&uarr;Auto&darr;"
@@ -611,12 +606,12 @@
                             "Value": 0
                         }]
                     },
-                    "ControlCode": "vane_autoud"
+                    "ControlCode": "thermostat_vanes_autoupdown"
                 },
                 {
                     "ControlType": "button",
-                    "top": "2",
-                    "left": "0",
+                    "top": 2,
+                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_vanelr_auto",
                         "text": "&larr;Auto&rarr;"
@@ -638,24 +633,23 @@
                             "Value": 0
                         }]
                     },
-                    "ControlCode": "vane_autolr"
+                    "ControlCode": "thermostat_vanes_autoleftright"
                 },
 
                 {
                     "ControlType": "label",
                     "top": "0.2",
-                    "left": "0",
+                    "left": 0,
                     "Label": {
                         "lang_tag": "wmp_about",
-                        "text": "Intesis WMP Gateway plug-in v2.2 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+                        "text": "Intesis WMP Gateway plug-in v2.3 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
                     },
                     "Display": {
                         "Top": 270,
                         "Left": 30,
                         "Width": 300,
                         "Height": 25
-                    },
-                    "ControlCode": "tb_intesiswmp_about"
+                    }
                 }
             ],
             "Conditions": []
@@ -665,7 +659,7 @@
                 "lang_tag": "ui7_advanced",
                 "text": "Advanced"
             },
-            "Position": "1",
+            "Position": 1,
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "advanced_device"
@@ -675,7 +669,7 @@
                 "lang_tag": "ui7_logs",
                 "text": "Logs"
             },
-            "Position": "2",
+            "Position": 2,
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_logs"
@@ -685,7 +679,7 @@
                 "lang_tag": "ui7_notifications",
                 "text": "Notifications"
             },
-            "Position": "3",
+            "Position": 3,
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_notifications"
@@ -695,7 +689,7 @@
                 "lang_tag": "ui7_device_scenes",
                 "text": "Scenes"
             },
-            "Position": "4",
+            "Position": 4,
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_scenes"
@@ -771,7 +765,7 @@
                 "text": "Ambient temperature goes above"
             },
             "serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
-            "norepeat": "1",
+            "norepeat": 1,
             "argumentList": [{
                 "id": 1,
                 "dataType": "i4",
@@ -798,7 +792,7 @@
                 "text": "Ambient temperature goes below"
             },
             "serviceId": "urn:upnp-org:serviceId:TemperatureSensor1",
-            "norepeat": "1",
+            "norepeat": 1,
             "argumentList": [{
                 "id": 1,
                 "dataType": "i4",
@@ -879,7 +873,7 @@
             "serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
             "serviceStateTable": {
                 "Failure": {
-                    "value": "0",
+                    "value": 0,
                     "comparisson": ">"
                 }
             },
@@ -897,7 +891,7 @@
             "serviceId": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
             "serviceStateTable": {
                 "Failure": {
-                    "value": "0",
+                    "value": 0,
                     "comparisson": "="
                 }
             },
