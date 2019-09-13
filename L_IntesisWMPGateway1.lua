@@ -54,9 +54,9 @@ local socket = require("socket")
 local _PLUGIN_NAME = "IntesisWMPGateway"
 local _PLUGIN_VERSION = "2.3"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
-local _CONFIGVERSION = 020201
+local _CONFIGVERSION = 020202
 
-local debugMode = false
+local debugMode = true
 -- local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -576,16 +576,23 @@ local function handleCHN( unit, segs, pdev )
 			end
 		end
 	elseif args[1] == "SETPTEMP" then
-		-- Store the setpoint temperature
-		local ptemp = tonumber( args[2], 10 ) / 10
-		if devData[pdev].sysTemps.unit == "F" then
-			ptemp = CtoF( ptemp )
+		-- Store the setpoint temperature. Leave unchanged if out of range (usually thermostat in
+		-- a mode where setpoint doesn't matter, e.g. FAN--at least once we've seen 32767 come back
+		-- in that case).
+		local ptemp = tonumber(args[2]) 
+		if ptemp and ptemp >= 0 and ptemp < 1200 then
+			ptemp = ptemp / 10
+			if devData[pdev].sysTemps.unit == "F" then
+				ptemp = CtoF( ptemp )
+			end
+			D("handleCHN() received SETPTEMP %1, setpoint now %2", args[2], ptemp)
+			luup.variable_set( SETPOINT_SID, "CurrentSetpoint", string.format( "%.0f", ptemp ), pdev )
+		else
+			D("handleCHN() received SETPTEMP %1, ignored", args[2], ptemp)
 		end
-		D("handleCHN() received SETPTEMP %1, setpoint now %2", args[2], ptemp)
-		luup.variable_set( SETPOINT_SID, "CurrentSetpoint", string.format( "%.0f", ptemp ), pdev )
 	elseif args[1] == "AMBTEMP" then
 		-- Store the current ambient temperature
-		local ptemp = tonumber( args[2], 10 ) / 10 -- but, is it C or F?
+		local ptemp = tonumber( args[2], 10 ) / 10
 		if devData[pdev].sysTemps.unit == "F" then
 			ptemp = CtoF( ptemp )
 		end
@@ -609,7 +616,11 @@ local function handleCHN( unit, segs, pdev )
 		luup.variable_set( DEVICESID, "IntesisERRSTATUS", args[2] or "", pdev )
 	elseif args[1] == "ERRCODE" then
 		-- Values are dependent on the connected device. Track.
-		luup.variable_set( DEVICESID, "IntesisERRCODE", args[2] or "", pdev )
+		l = luup.variable_get( DEVICESID, "IntesisERRCODE", pdev )
+		l = split( l or "" ) or {}
+		table.insert( l, tostring(args[2]):gsub(",","%2C") )
+		while #l > 10 do table.remove( l, 1 ) end
+		luup.variable_set( DEVICESID, "IntesisERRCODE", table.concat( l, "," ), pdev )
 	else
 		D("handleCHN() unhandled function %1 in %2", args[1], segs)
 	end
@@ -936,7 +947,6 @@ local function deviceRunOnce( dev, parentDev )
 		end
 
 		luup.variable_set(HADEVICE_SID, "ModeSetting", "1:;2:;3:;4:", dev)
-		luup.variable_set(HADEVICE_SID, "Commands", "thermostat_mode_off,thermostat_mode_auto,thermostat_mode_cool,thermostat_mode_heat,thermostat_mode_fanonly,thermostat_mode_dry,thermostat_set_temp,thermostat_fanstate,thermostat_fanmode_auto,thermostat_fan_down,thermostat_fan_up,thermostat_vanes_up,thermostat_vanes_left,thermostat_vanes_right,thermostat_vanes_down,thermostat_vanes_autoupdown,thermostat_vanes_autoleftright", dev)
 
 		luup.variable_set(DEVICESID, "Version", _CONFIGVERSION, dev)
 		return
@@ -947,10 +957,10 @@ local function deviceRunOnce( dev, parentDev )
 		luup.variable_set(DEVICESID, "IPAddress", "", dev )
 		luup.variable_set(DEVICESID, "TCPPort", "", dev )
 	end
---]]
 
-	if rev < 020201 then
-		luup.variable_set(HADEVICE_SID, "Commands", "thermostat_mode_off,thermostat_mode_auto,thermostat_mode_cool,thermostat_mode_heat,thermostat_mode_fanonly,thermostat_mode_dry,thermostat_set_temp,thermostat_fanstate,thermostat_fanmode_auto,thermostat_fan_down,thermostat_fan_up,thermostat_vanes_up,thermostat_vanes_left,thermostat_vanes_right,thermostat_vanes_down,thermostat_vanes_autoupdown,thermostat_vanes_autoleftright", dev)
+	if rev < 020202 then
+		-- More trouble than it's worth
+		luup.variable_set(HADEVICE_SID, "Commands", nil, dev)
 	end
 
 	-- No matter what happens above, if our versions don't match, force that here/now.
