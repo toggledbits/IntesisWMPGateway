@@ -52,11 +52,11 @@ local string = require("string")
 local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "2.3"
+local _PLUGIN_VERSION = "2.4"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
-local _CONFIGVERSION = 020202
+local _CONFIGVERSION = 020203
 
-local debugMode = true
+local debugMode = false
 -- local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -88,7 +88,7 @@ local FANMODE_ON = "ContinuousOn"
 -- Intesis EOL string. Can be CR only, doesn't need LF. The device takes either or both per their spec.
 local INTESIS_EOL = string.char(13)
 -- Default ping interval. This can overridden by state variable PingInterval.
-local DEFAULT_PING = 15
+local DEFAULT_PING = 30
 -- Default refresh interval (GET,1:*). This can be overridden by state variable RefreshInterval
 local DEFAULT_REFRESH = 60
 
@@ -408,6 +408,7 @@ local function deviceConnectTCP( dev )
 		if not status then
 			L("Can't open %1 (%2) at %3:%4, %5", dev, luup.devices[dev].description, ip, port, err)
 			devData[dev].isConnected = false
+			sock:close()
 
 			-- See if IP address has changed
 			D("deviceConnectTCP() see if IP address changed")
@@ -429,6 +430,7 @@ local function deviceConnectTCP( dev )
 							return true
 						end
 						D("deviceConnectTCP() failed on %1, %2", newIP.ip, err)
+						sock:close()
 					end
 				end
 				-- None of these IPs worked, or, one did... how do we know...
@@ -579,7 +581,7 @@ local function handleCHN( unit, segs, pdev )
 		-- Store the setpoint temperature. Leave unchanged if out of range (usually thermostat in
 		-- a mode where setpoint doesn't matter, e.g. FAN--at least once we've seen 32767 come back
 		-- in that case).
-		local ptemp = tonumber(args[2]) 
+		local ptemp = tonumber(args[2])
 		if ptemp and ptemp >= 0 and ptemp < 1200 then
 			ptemp = ptemp / 10
 			if devData[pdev].sysTemps.unit == "F" then
@@ -706,13 +708,13 @@ local function deviceReceive( dev )
 	-- We'd love for LuaSocket to have an option to just return as much data as it has...
 	-- Loop for up to 255 bytes. That's an arbitrary choice to make sure we return
 	-- to our caller if the peer is transmitting continuously.
-	devData[dev].sock:settimeout( 1, "b" )
-	devData[dev].sock:settimeout( 1, "r" )
+	devData[dev].sock:settimeout( 0, "b" )
+	devData[dev].sock:settimeout( 0, "r" )
 	local count = 0
 	while count < 255 do
 		local b, err = devData[dev].sock:receive(1)
 		if b == nil then
-			-- Timeouts are not a problem.
+			-- Timeouts are not a problem, but we stop looping when we get one.
 			if err ~= "timeout" then
 				D("deviceReceive() error %1", err)
 			end
@@ -907,7 +909,7 @@ end
 local function deviceRunOnce( dev, parentDev )
 
 	local rev = getVarNumeric("Version", 0, dev, DEVICESID)
-	if (rev == 0) then
+	if rev == 0 then
 		-- Initialize for new installation
 		D("runOnce() Performing first-time initialization!")
 		luup.variable_set(DEVICESID, "Parent", parentDev, dev )
@@ -957,7 +959,6 @@ local function deviceRunOnce( dev, parentDev )
 		luup.variable_set(DEVICESID, "IPAddress", "", dev )
 		luup.variable_set(DEVICESID, "TCPPort", "", dev )
 	end
-
 	if rev < 020202 then
 		-- More trouble than it's worth
 		luup.variable_set(HADEVICE_SID, "Commands", nil, dev)
@@ -1399,13 +1400,14 @@ local function plugin_runOnce(dev)
 	assert(luup.devices[dev].device_num_parent == 0, "plugin_runOnce should only run on parent device")
 
 	local rev = getVarNumeric("Version", 0, dev, MYSID)
-	if (rev == 0) then
+	if rev == 0 then
 		-- Initialize for new installation
 		D("runOnce() Performing first-time initialization!")
 		luup.variable_set(MYSID, "DisplayStatus", "", dev)
 		luup.variable_set(MYSID, "PingInterval", DEFAULT_PING, dev)
 		luup.variable_set(MYSID, "RefreshInterval", DEFAULT_REFRESH, dev)
 		luup.variable_set(MYSID, "RunStartupDiscovery", 1, dev)
+		luup.variable_set(MYSID, "DebugMode", 0, dev)
 		luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
 		return true -- tell caller to keep going
 	end
@@ -1484,6 +1486,10 @@ local function plugin_runOnce(dev)
 		return false -- signal caller to not continue.
 	end
 
+	if rev < 020203 then
+		luup.variable_set(MYSID, "DebugMode", 0, dev)
+	end
+
 	-- No matter what happens above, if our versions don't match, force that here/now.
 	if (rev ~= _CONFIGVERSION) then
 		luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
@@ -1499,6 +1505,11 @@ function plugin_init(dev)
 	-- Up front inits
 	devData[dev] = {}
 	math.randomseed( os.time() )
+
+	if getVarNumeric("DebugMode", 0, dev, MYSID) ~= 0 then
+		debugMode = true
+		D("plugin_init() debug enabled by state variable")
+	end
 
 	-- Check for ALTUI and OpenLuup
 	for _,v in pairs(luup.devices) do
