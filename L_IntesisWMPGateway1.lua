@@ -88,9 +88,9 @@ local FANMODE_ON = "ContinuousOn"
 -- Intesis EOL string. Can be CR only, doesn't need LF. The device takes either or both per their spec.
 local INTESIS_EOL = string.char(13)
 -- Default ping interval. This can overridden by state variable PingInterval.
-local DEFAULT_PING = 30
+local DEFAULT_PING = 32
 -- Default refresh interval (GET,1:*). This can be overridden by state variable RefreshInterval
-local DEFAULT_REFRESH = 60
+local DEFAULT_REFRESH = 64
 
 local runStamp = {}
 local devData = {}
@@ -394,6 +394,10 @@ local function configureSocket( sock, dev )
 	sock:settimeout( 1, "r" )
 	devData[dev].sock = sock
 	devData[dev].isConnected = true
+	devData[dev].lastinfo = 0
+	devData[dev].lastdtm = 0
+	devData[dev].lastRefresh = 0
+	devData[dev].lastSendTime = os.time()
 end
 
 -- Open TCP connection to IntesisBox device
@@ -882,7 +886,8 @@ local function passGenericDiscovery( mac, ip, gateway, dev )
 	)
 end
 
-local infocmd = { "LIMITS:MODE","LIMITS:SETPTEMP","LIMITS:FANSP","LIMITS:VANEUD","LIMITS:VANELR" }
+-- List of commands to send early after initialization (inquiries).
+local infocmd = { "INFO", "LIMITS:*" }
 
 function deviceTick( dargs )
 	D("deviceTick(%1), luup.device=%2", dargs, luup.device)
@@ -896,12 +901,11 @@ function deviceTick( dargs )
 	end
 
 	-- See if we received any data.
-	local nextDelay = 15
+	devData[dev].lastDelay = devData[dev].lastDelay or 1
 	if not devData[dev].isConnected then
 		D("deviceTick() peer is not connected, trying to reconnect...")
 		if sendCommand("ID", dev) then
 			nextDelay = 1
-			sendCommand("INFO", dev)
 		else
 			D("deviceTick() can't connect peer, waiting...")
 			nextDelay = 60 -- wait a good while before trying again.
@@ -915,35 +919,31 @@ function deviceTick( dargs )
 		local intPing = getVarNumeric( "PingInterval", DEFAULT_PING, dev, DEVICESID )
 		local intRefresh = getVarNumeric( "RefreshInterval", DEFAULT_REFRESH, dev, DEVICESID )
 
+		-- No data received. By default, next delay is 2 x previous delay, max 16
+		nextDelay = math.min( 16, devData[dev].lastDelay * 2 )
+
 		-- If it's been more than two refresh intervals or three pings since we
 		-- received some data, we may be in trouble...
 		if devData[dev].isConnected and ( (now - devData[dev].lastIncoming) >= math.min( 2 * intRefresh, 3 * intPing ) ) then
 			L("Device receive timeout; marking disconnected!")
 			pcall( closeSocket, dev )
 			updateDeviceStatus( dev )
-		end
-
-		-- Refresh or ping due?
-		if devData[dev].lastRefresh + intRefresh <= now then
+			nextDelay = 1
+		elseif devData[dev].lastinfo < #infocmd then
+			devData[dev].lastinfo = devData[dev].lastinfo + 1
+			sendCommand(infocmd[devData[dev].lastinfo], dev)
+			nextDelay = 1
+		elseif devData[dev].lastRefresh + intRefresh <= now then
 			sendCommand("GET,1:*", dev)
 			devData[dev].lastRefresh = now
 			nextDelay = 1
 		elseif devData[dev].lastSendTime + intPing <= now then
 			sendCommand("PING", dev)
 			nextDelay = 1
-		elseif devData[dev].lastinfo < #infocmd then
-			devData[dev].lastinfo = devData[dev].lastinfo + 1
-			sendCommand(infocmd[devData[dev].lastinfo], dev)
-			nextDelay = 2
-		end
-
-		-- When do we tick next?
-		local nextPing = devData[dev].lastSendTime + intPing
-		local nextRefresh = devData[dev].lastRefresh + intRefresh
-		if nextRefresh < nextPing and nextRefresh > now then
-			nextDelay = math.min( nextDelay, nextRefresh - now )
-		elseif nextPing > now then
-			nextDelay = math.min( nextDelay, nextPing - now )
+		elseif devData[dev].lastdtm == nil or ( devData[dev].lastdtm + 3600 ) <= now then
+			sendCommand(string.format("CFG:DATETIME,%s", os.date("%d/%m/%Y %H:%M:%S")), dev)
+			devData[dev].lastdtm = now
+			nextDelay = 1
 		end
 	end
 
@@ -958,6 +958,7 @@ function deviceTick( dargs )
 	assert( nextDelay > 0 )
 	D("deviceTick() arming for next tick in %1", nextDelay)
 	luup.call_delay( "intesisDeviceTick", nextDelay, dargs )
+	devData[dev].lastDelay = nextDelay
 end
 
 -- Do a one-time startup on a new device
@@ -1244,6 +1245,10 @@ function actionSetModeTarget( dev, newMode )
 			return false
 		end
 	elseif xmap[newMode] ~= nil then
+		if not inLimit( "MODE", xmap[newMode], dev ) then
+			L({level=2,msg="Unsupported MODE %1 (configured device only supports %2)"}, xmap[newMode], devData[dev].limits.MODE.values)
+			return false
+		end
 		if not sendCommand( "SET,1:ONOFF,ON", dev ) then
 			return false
 		end
@@ -1251,7 +1256,7 @@ function actionSetModeTarget( dev, newMode )
 			return false
 		end
 	else
-		L("Invalid target mode passed in action: %1", newMode)
+		L("Invalid target opreating mode passed in action: %1", newMode)
 		return false
 	end
 	luup.variable_set( OPMODE_SID, "ModeTarget", newMode, dev )
@@ -1274,11 +1279,8 @@ end
 -- Set fan speed. Empty/nil or 0 sets Auto.
 function actionSetCurrentFanSpeed( dev, newSpeed )
 	D("actionSetCurrentFanSpeed(%1,%2)", dev, newSpeed)
-	newSpeed = tonumber( newSpeed ) or 0
-	if newSpeed == 0 then
-		return sendCommand( "SET,1:FANSP,AUTO", dev )
-	end
-	if inLimit( "FANSP", newSpeed, dev ) then
+	if (newSpeed or "0") == "0" then newSpeed = "AUTO" end
+	if inLimit( "FANSP", tostring(newSpeed), dev ) then
 		return sendCommand( "SET,1:FANSP," .. newSpeed, dev )
 	end
 	L({level=2,msg="Fan speed %1 out of range"}, newSpeed)
@@ -1289,20 +1291,23 @@ end
 function actionFanSpeedUp( dev )
 	D("actionFanSpeedUp(%1)", dev)
 	local speed = getVarNumeric( "IntesisFANSP", 0, dev, DEVICESID ) + 1
-	return inLimit( "FANSP", speed, dev ) and actionSetCurrentFanSpeed( dev, speed ) or false
+	return inLimit( "FANSP", speed, dev ) and sendCommand( "SET,1:FANSP," .. speed, dev ) or false
 end
 
 -- Speed up the fan (implies switch out of auto, presumably)
 function actionFanSpeedDown( dev )
 	D("actionFanSpeedDown(%1)", dev)
 	local speed = getVarNumeric( "IntesisFANSP", 2, dev, DEVICESID ) - 1
-	return inLimit( "FANSP", speed, dev ) and actionSetCurrentFanSpeed( dev, speed ) or false
+	return inLimit( "FANSP", speed, dev ) and sendCommand( "SET,1:FANSP," .. speed, dev ) or false
 end
 
 -- FanSpeed1 service action for 0-100 fan speed (0 is auto for us)
 function actionSetFanSpeed( dev, level )
 	level = tonumber( level ) or 0
-	local speed = level > 0 and math.floor( ( level + 24 ) / 25 ) or 0
+	range = devData[dev].limits.FANSP.range
+	scale = 100 / ((range.max or 9) - (range.min or 1) + 1)
+	local speed = level > 0 and math.floor( ( level + scale - 1 ) / scale ) or 0
+	L("Mapped fan from level %1%% using range %2 scale %3 to speed %4", level, range, scale, speed)
 	return actionSetCurrentFanSpeed( dev, speed )
 end
 
@@ -1337,16 +1342,10 @@ end
 -- Set vane (up/down) position.
 function actionSetVaneUD( dev, newPos )
 	D("actionSetVaneUD(%1,%2)", dev, newPos)
-	if newPos == nil or string.upper(newPos) == "AUTO" then newPos = "AUTO" end
-	if newPos ~= "AUTO" then
-		newPos = tonumber( newPos ) or 0
-		if newPos < 0 then newPos = "SWING"
-		elseif newPos == 0 then newPos = "AUTO"
-		end
-		if not inLimit( "VANEUD", tostring(newPos), dev ) then
-			L({level=2,msg="Vane U-D position %1 is outside accepted range; ignored"}, newPos)
-			return false
-		end
+	if (newPos or "0") == "0" then newPos = "AUTO" end
+	if not inLimit( "VANEUD", tostring(newPos), dev ) then
+		L({level=2,msg="Vane U-D position %1 is outside accepted range (%2); ignored"}, newPos, devData[dev].limits.VANEUD.values)
+		return false
 	end
 	return sendCommand( "SET,1:VANEUD," .. tostring(newPos), dev )
 end
@@ -1356,31 +1355,25 @@ function actionVaneUp( dev )
 	D("actionVaneUp(%1)", dev )
 	local pos = getVarNumeric( "IntesisVANEUD", 0, dev, DEVICESID ) - 1
 	if pos <= 0 and inLimit( "VANEUD", "SWING", dev ) then
-		return actionSetVaneUD( dev, -1 )
+		pos = "SWING"
 	end
-	return inLimit( "VANEUD", pos, dev ) and actionSetVaneUD( dev, pos ) or false
+	return inLimit( "VANEUD", pos, dev ) and sendCommand("SET,1:VANEUD," .. pos, dev) or false
 end
 
 -- Set vane down (relative)
 function actionVaneDown( dev )
 	D("actionVaneDown(%1)", dev )
 	local pos = getVarNumeric( "IntesisVANEUD", 0, dev, DEVICESID ) + 1
-	return inLimit( "VANEUD", pos, dev ) and actionSetVaneUD( dev, pos ) or false
+	return inLimit( "VANEUD", pos, dev ) and sendCommand("SET,1:VANEUD," .. pos, dev) or false
 end
 
 -- Set vane (left/right) position.
 function actionSetVaneLR( dev, newPos )
 	D("actionSetVaneLR(%1,%2)", dev, newPos)
-	if newPos == nil or string.upper(newPos) == "AUTO" then newPos = "AUTO" end
-	if newPos ~= "AUTO" then
-		newPos = tonumber( newPos ) or 0
-		if newPos < 0 then newPos = "SWING"
-		elseif newPos == 0 then newPos = "AUTO"
-		end
-		if not inLimit( "VANELR", tostring(newPos), dev ) then
-			L({level=2,msg="Vane L-R position %1 is outside accepted range; ignored"}, newPos)
-			return false
-		end
+	if (newPos or "0") == "0" then newPos = "AUTO" end
+	if not inLimit( "VANELR", tostring(newPos), dev ) then
+		L({level=2,msg="Vane L-R position %1 is outside accepted range; ignored"}, newPos, devData[dev].limits.VANELR.values)
+		return false
 	end
 	return sendCommand( "SET,1:VANELR," .. tostring(newPos), dev )
 end
@@ -1390,16 +1383,16 @@ function actionVaneLeft( dev )
 	D("actionVaneLeft(%1)", dev )
 	local pos = getVarNumeric( "IntesisVANELR", 0, dev, DEVICESID ) - 1
 	if pos <= 0 and inLimit( "VANELR", "SWING" ) then
-		return actionSetVaneLR( dev, -1 )
+		pos = "SWING"
 	end
-	return inLimit( "VANELR", pos, dev ) and actionSetVaneLR( dev, pos ) or false
+	return inLimit( "VANELR", pos, dev ) and sendCommand( "SET,1:VANELR," .. pos, dev ) or false
 end
 
 -- Vane right
 function actionVaneRight( dev )
 	D("actionVaneDown(%1)", dev )
 	local pos = getVarNumeric( "IntesisVANELR", 0, dev, DEVICESID ) + 1
-	return inLimit( "VANELR", pos, dev ) and actionSetVaneLR( dev, pos ) or false
+	return inLimit( "VANELR", pos, dev ) and sendCommand( "SET,1:VANELR," .. pos, dev ) or false
 end
 
 -- Set the device name
