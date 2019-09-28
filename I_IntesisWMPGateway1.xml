@@ -140,7 +140,7 @@
 			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
 			<name>FanSpeedUp</name>
 			<run>
-				-- Raise the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
+				-- Raise the fan speed.
 				IntesisWMPGateway.actionFanSpeedUp( lul_device )
 			</run>
 		</action>
@@ -148,7 +148,7 @@
 			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
 			<name>FanSpeedDown</name>
 			<run>
-				-- Lower the fan speed. To return fan to auto, use HVAC_FanOperatingMode1/SetMode(Auto)
+				-- Lower the fan speed.
 				IntesisWMPGateway.actionFanSpeedDown( lul_device )
 			</run>
 		</action>
@@ -156,8 +156,8 @@
 			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
 			<name>SetCurrentFanSpeed</name>
 			<run>
-				-- Set Intesis fan speed. Must pass NewFanSpeed. If nil, 0, or empty, returns to Auto.
-				IntesisWMPGateway.actionSetCurrentFanSpeed( lul_device, lul_settings.NewFanSpeed )
+				-- Set Intesis fan speed. Must pass NewCurrentFanSpeed. If nil, 0, or empty, returns to Auto.
+				IntesisWMPGateway.actionSetCurrentFanSpeed( lul_device, lul_settings.NewCurrentFanSpeed or 0)
 			</run>
 		</action>
 		<action>
