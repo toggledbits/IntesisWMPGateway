@@ -392,7 +392,7 @@
 						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
 						"Action": "SetCurrentFanSpeed",
 						"Parameters": [{
-							"Name": "NewFanSpeed",
+							"Name": "NewCurrentFanSpeed",
 							"Value": 0
 						}]
 					},
@@ -603,7 +603,7 @@
 						"Action": "SetUpDownVanePosition",
 						"Parameters": [{
 							"Name": "NewPosition",
-							"Value": 0
+							"Value": "0"
 						}]
 					},
 					"ControlCode": "thermostat_vanes_autoupdown"
@@ -630,7 +630,7 @@
 						"Action": "SetLeftRightVanePosition",
 						"Parameters": [{
 							"Name": "NewPosition",
-							"Value": 0
+							"Value": "0"
 						}]
 					},
 					"ControlCode": "thermostat_vanes_autoleftright"
@@ -652,7 +652,133 @@
 					}
 				}
 			],
-			"Conditions": []
+			"Conditions": [
+				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeAUTO",
+							"Value": {
+								"Equals": "0"
+							}
+						}]
+					},
+					"Action": "disable",
+					"Target": "thermostat_mode_auto"
+				},				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeAUTO",
+							"Value": {
+								"Equals": "1"
+							}
+						}]
+					},
+					"Action": "enable",
+					"Target": "thermostat_mode_auto"
+				},
+				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeCOOL",
+							"Value": {
+								"Equals": "0"
+							}
+						}]
+					},
+					"Action": "disable",
+					"Target": "thermostat_mode_cool"
+				},				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeCOOL",
+							"Value": {
+								"Equals": "1"
+							}
+						}]
+					},
+					"Action": "enable",
+					"Target": "thermostat_mode_cool"
+				},
+				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeHEAT",
+							"Value": {
+								"Equals": "0"
+							}
+						}]
+					},
+					"Action": "disable",
+					"Target": "thermostat_mode_heat"
+				},				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeHEAT",
+							"Value": {
+								"Equals": "1"
+							}
+						}]
+					},
+					"Action": "enable",
+					"Target": "thermostat_mode_heat"
+				},
+				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeDRY",
+							"Value": {
+								"Equals": "0"
+							}
+						}]
+					},
+					"Action": "disable",
+					"Target": "thermostat_mode_dry"
+				},				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeDRY",
+							"Value": {
+								"Equals": "1"
+							}
+						}]
+					},
+					"Action": "enable",
+					"Target": "thermostat_mode_dry"
+				},
+				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeFAN",
+							"Value": {
+								"Equals": "0"
+							}
+						}]
+					},
+					"Action": "disable",
+					"Target": "thermostat_mode_fanonly"
+				},				{
+					"Trigger": {
+						"Operands": [{
+							"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+							"Variable": "ModeFAN",
+							"Value": {
+								"Equals": "1"
+							}
+						}]
+					},
+					"Action": "enable",
+					"Target": "thermostat_mode_fanonly"
+				}
+			]
 		},
 		{
 			"Label": {
