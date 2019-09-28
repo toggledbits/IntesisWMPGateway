@@ -1,5 +1,7 @@
 # Intesis WMP Gateway #
 
+Revised 2019-09-28
+
 ## Introduction ##
 
 IntesisWMPGateway is a "plug-in" for for Vera home automation controllers that mimics the behavior of a standard heating/cooling
@@ -13,8 +15,8 @@ do not work, even though they may have "WMP" in the product model. A separate pl
 
 IntesisWMPGateway works with ALTUI, but does not work with openLuup at this time.
 
-IntesisWMPGateway is written and supported by Patrick Rigney, aka rigpapa on the [Vera forums](http://forum.micasaverde.com/).
-If you find the project useful, please consider supporting my work a small donation at [MakerSupport.com](https://www.makersupport.com/toggledbits).
+IntesisWMPGateway is written and supported by Patrick Rigney, aka rigpapa on the [Vera forums](http://community.getvera.com/).
+If you find the project useful, please consider supporting my work a small donation at [my web site](https://www.toggledbits.com/donate/).
 
 For more information on Intesis WMP Gateways, [visit the Intesis site](https://www.intesishome.com/). For more information on Vera home automation controllers,
 [Vera Ltd's site](http://getvera.com/).
@@ -46,8 +48,14 @@ Before you can use the device, you must configure the IP address of your gateway
 and including bricking the controller. Proceed at your own risk.**
 
 To install from GitHub, download a release from the project's [GitHub repository](https://github.com/toggledbits/IntesisWMPGateway/releases).
-Unzip it, and then upload the release files to your Vera using the uploader found in the UI under Apps > Develop apps > Luup files. You should
-turn off the "Restart Luup after upload" checkbox until uploading the last of the files. Turn it on for the last file.
+Alternately, the latest stable development version (somewhat tested and expected to nearly bug-free) can be downloaded from
+[the "stable" branch](https://github.com/toggledbits/IntesisWMPGateway/tree/stable)
+(click the green "Clone or download" button here and choose "Download ZIP").
+
+Unzip the downloaded release archive, and then upload the release files to your Vera using the uploader found in the UI under
+*Apps > Develop apps > Luup files*. You can multi-select and drag the files as a group to the "Upload" control (recommended). If you
+decide to upload the files one at a time, turn off the "Restart Luup after upload" checkbox until uploading the last of the files. 
+Turn it back on for the last file.
 
 ### Configuration ###
 
@@ -55,7 +63,7 @@ If you are coming from a fresh installation of the plug-in, or have just created
 
 1. Go to Apps > Develop apps > Test Luup code (Lua);
 1. Type `luup.reload()` into the text box and click the "GO" button;
-1. Do a CTRL-F5 or equivalent (browser-dependent) to refresh the Vera UI with a flush of cached data.
+1. [Hard-refresh your browser](https://www.getfilecloud.com/blog/2015/03/tech-tip-how-to-do-hard-refresh-in-browsers/). **Do not skip this step.**
 
 ## Operation ##
 
@@ -87,12 +95,12 @@ the heating/cooling unit given its capabilities.
 
 The plugin creates two device types and services:
 
-1. Type , service `urn:toggledbits-com:serviceId:IntesisWMPGateway1`, which
-1. Type , service `urn:toggledbits-com:serviceId:IntesisWMPDevice1`, which contains the state and actions associated with each IntesisBox device;
+1. Type `urn:schemas-toggledbits-com:device:IntesisWMPGateway:1`, service `urn:toggledbits-com:serviceId:IntesisWMPGateway1`, which contains state and actions associated with the plugin itself;
+1. Type `urn:schemas-toggledbits-com:device:IntesisWMPDevice:1`, service `urn:toggledbits-com:serviceId:IntesisWMPDevice1`, which contains state and actions associated with each IntesisBox gateway discovered;
 
 ### IntesisGateway1 Service Actions and Variables ###
 
-The IntesisGateway1 service, which must be referenced using its full name `urn:toggledbits-com:serviceId:IntesisWMPGateway1`,
+The `IntesisGateway1` service, which must be referenced using its full name `urn:toggledbits-com:serviceId:IntesisWMPGateway1`,
 contains the state and actions associated with the gateway device itself. It is associated with the
 `urn:schemas-toggledbits-com:device:IntesisWMPGateway:1` device type.
 
@@ -128,7 +136,7 @@ times when data changes or commands are executed.
 
 `RefreshInterval` is the time between full queries for data from the gateway. Periodically, the plug-in will make a query for all current
 gateway status parameters, to ensure that the Vera plug-in and UI are in sync with the gateway. This value is in seconds, and the default
-is 64. It is not recommended to set this value lower than the ping interval (above).
+is 64. This value should always be greater than the ping interval (above).
 
 #### Variable: DebugMode ####
 
@@ -247,7 +255,7 @@ to air handler, the plugin does not act on them, but since they are stored, user
 knowledge of the air handling unit installed. 
 
 The `ERRCODE` variable will contain a comma-separated list of the last 10 error codes reported. It can be safely written to an empty (zero-length) string 
-value if an external facility is used to read and interpret the codes and it needs to mark the errors "handled."
+value ("") if an external facility is used to read and interpret the codes and it needs to mark the errors "handled."
 
 Note that the IS-IR-WMP-1 gateway does not have two-way communication with the configured air handling device, so these values are not available when
 using that model gateway, or any future similar model (i.e. models that are not hardwired to the air handler and have two-way communication with it).
@@ -299,6 +307,8 @@ To connect Intesis WMP Gateway to ImperiHome:
 1. Click **Next** to connect.
 
 ImperiHome should then populate your groups with your Intesis WMP Gateway plugin devices.
+
+NOTE: The ISS gateway does not operate using remote access; it only operates within the LAN segment with local IP access to the Vera.
 
 ## Reporting Bugs/Enhancement Requests ##
 
