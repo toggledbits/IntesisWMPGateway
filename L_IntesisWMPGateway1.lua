@@ -923,7 +923,8 @@ function deviceTick( dargs )
 		nextDelay = math.min( 16, devData[dev].lastDelay * 2 )
 
 		-- If it's been more than two refresh intervals or three pings since we
-		-- received some data, we may be in trouble...
+		-- received some data, we may be in trouble... These tests are in order of priority
+		-- from highest to lowest (ping is the least important).
 		if devData[dev].isConnected and ( (now - devData[dev].lastIncoming) >= math.min( 2 * intRefresh, 3 * intPing ) ) then
 			L("Device receive timeout; marking disconnected!")
 			pcall( closeSocket, dev )
@@ -937,12 +938,13 @@ function deviceTick( dargs )
 			sendCommand("GET,1:*", dev)
 			devData[dev].lastRefresh = now
 			nextDelay = 1
-		elseif devData[dev].lastSendTime + intPing <= now then
-			sendCommand("PING", dev)
-			nextDelay = 1
-		elseif devData[dev].lastdtm == nil or ( devData[dev].lastdtm + 3600 ) <= now then
+		elseif getVarNumeric( "SendDateTime", 1, dev, DEVICESID ) ~= 0 and
+				devData[dev].lastdtm == nil or ( devData[dev].lastdtm + 3600 ) <= now then
 			sendCommand(string.format("CFG:DATETIME,%s", os.date("%d/%m/%Y %H:%M:%S")), dev)
 			devData[dev].lastdtm = now
+			nextDelay = 1
+		elseif devData[dev].lastSendTime + intPing <= now then
+			sendCommand("PING", dev)
 			nextDelay = 1
 		end
 	end
