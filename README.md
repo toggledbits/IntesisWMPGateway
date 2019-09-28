@@ -6,7 +6,7 @@ IntesisWMPGateway is a "plug-in" for for Vera home automation controllers that m
 thermostat and uses the Intesis WMP communications protocol to send commands and receive status from an Intesis WMP gateway
 device.
 
-The IntesisWMPGateway plug-in works with the following Intesis devices: IS-IR-WMP-1, ME-AC-WMP-1, DK-AC-WMP-1, 
+The IntesisWMPGateway plug-in works with the following Intesis devices: IS-IR-WMP-1, ME-AC-WMP-1, DK-AC-WMP-1,
 MH-AC-WMP-1, MH-RC-WMP-1, TD-RC-WMP-1, PA-AC-WMP-1, PA-RC2-WMP-1, LG-RC-WMP-1, FJ-RC-WMP-1. The plug-in uses the local
 WMP interface for communication (uses TCP port 3310). Note that devices that use Intesis cloud service for control
 do not work, even though they may have "WMP" in the product model. A separate plug-in is planned for these devices.
@@ -34,7 +34,7 @@ To install the plug-in from the Vera plug-in catalog:
 1. Type "Intesis" into the search box and click "Search app";
 1. Choose the "Intesis WMP Gateway" app.
 
-The plug-in will be installed, and the first device created. Each gateway device should have a corresponding Vera device (instance of 
+The plug-in will be installed, and the first device created. Each gateway device should have a corresponding Vera device (instance of
 the plug-in). If you have more than one gateway device, find the Intesis WMP Gateway app under the Apps > My apps section of the UI,
 click the "Details" button, and then clock the "Create another" button to create an additional Vera device.
 
@@ -42,7 +42,7 @@ Before you can use the device, you must configure the IP address of your gateway
 
 ### Installation from GitHub ###
 
-**Warning: this method is for experienced users only. Incorrectly uploading files to your Vera controller can cause problems, up to 
+**Warning: this method is for experienced users only. Incorrectly uploading files to your Vera controller can cause problems, up to
 and including bricking the controller. Proceed at your own risk.**
 
 To install from GitHub, download a release from the project's [GitHub repository](https://github.com/toggledbits/IntesisWMPGateway/releases).
@@ -73,12 +73,12 @@ that device specifically. The third is IP discovery, which may be used if the IP
 Each discovered IntesisBox
 device presents as a heating/cooling thermostat in the Vera UI. These devices are child devices of the parent gateway device, although
 this association is not readily apparent from the UI, and in most cases is not relevant for the typical Vera user (Lua scripters will care, though).
-Buttons labeled "Off", "Heat", "Cool", "Auto", "Dry" and "Fan" 
-are used to change the heating/cooling unit's operating mode. The "spinner" control (up/down arrows) is used to change the setpoint temperature. 
+Buttons labeled "Off", "Heat", "Cool", "Auto", "Dry" and "Fan"
+are used to change the heating/cooling unit's operating mode. The "spinner" control (up/down arrows) is used to change the setpoint temperature.
 To the right of the spinner is the current temperature as reported by the gateway. If you click the arrow in the device panel you land on the "Control" tab, and an expanded control UI is presented. The operating mode and setpoint controls are the similar, but there additional controls for fan speed and vane position.
 
 **NOTE:** Since the IntesisBox devices are interfaces for a large number of heating/cooling units by various manufacturers, the capabilities
-of each device vary considerably. For many devices, some UI buttons will have no effect, or have side-effects to other functions; 
+of each device vary considerably. For many devices, some UI buttons will have no effect, or have side-effects to other functions;
 in some cases, the buttons may affect one unit differently
 from the way they affect another. This is not a defect of the plug-in, but rather the response to Intesis' interpretation of how to best control
 the heating/cooling unit given its capabilities.
@@ -87,7 +87,7 @@ the heating/cooling unit given its capabilities.
 
 The plugin creates two device types and services:
 
-1. Type , service `urn:toggledbits-com:serviceId:IntesisWMPGateway1`, which 
+1. Type , service `urn:toggledbits-com:serviceId:IntesisWMPGateway1`, which
 1. Type , service `urn:toggledbits-com:serviceId:IntesisWMPDevice1`, which contains the state and actions associated with each IntesisBox device;
 
 ### IntesisGateway1 Service Actions and Variables ###
@@ -115,24 +115,30 @@ This action starts discovery for a given IP address. If communication with the d
 This action enables debugging to the Vera log, which increases the verbosity of the plugins information output. It takes a single
 parameter, `debug`, which must be either 0 or 1 in numeric or string form.
 
-### Variable: PingInterval ###
+See the *DebugMode* state variable, below.
+
+#### Variable: PingInterval ####
 
 `PingInterval` is the time between pings to the gateway device. These pings are used to keep the TCP connection up between the Vera and the
-gateway. The value of this variable is in seconds, and the default is 15. It is not recommended to set this value lower than 5 or greater
-than 120. If the value is too high (which could be any value greater than the default), disconnects may result, requiring a Luup reload
-for recovery.
+gateway. The value of this variable is in seconds, and the default is 32. It is not recommended to set this value lower than 5 or greater
+than 120. If the value is too high (which could be any value greater than the default), disconnects may result, resulting in longer refresh
+times when data changes or commands are executed.
 
-### Variable: RefreshInterval ###
+#### Variable: RefreshInterval ####
 
 `RefreshInterval` is the time between full queries for data from the gateway. Periodically, the plug-in will make a query for all current
 gateway status parameters, to ensure that the Vera plug-in and UI are in sync with the gateway. This value is in seconds, and the default
-is 60. It is not recommended to set this value lower than the ping interval (above).
+is 64. It is not recommended to set this value lower than the ping interval (above).
+
+#### Variable: DebugMode ####
+
+When non-zero, this variable enables debug output to the Luup log file. A restart is required for changes to take effect.
 
 ### IntesisDevice1 Service Actions and Variables ###
 
 The IntesisDevice1 service, which must be referenced using its full name `urn:toggledbits-com:serviceId:IntesisWMPDevice1`,
 contains the state and actions associated with IntesisBox devices. It is associated with the
-`urn:schemas-toggledbits-com:device:IntesisWMPDevice:1` device type. 
+`urn:schemas-toggledbits-com:device:IntesisWMPDevice:1` device type.
 
 These devices also implement actions and variables
 of HVAC_OperatingState1, HVAC_FanState1, TemperatureSetpoint1, and TemperatureSensor1. See Other Services, below, for detail.
@@ -163,11 +169,12 @@ the configured heating/cooling unit. These actions take no parameters.
 
 The `SetCurrentFanSpeed` action takes a single parameter, `NewCurrentFanSpeed`, which sets the fan speed at the gateway. The new
 fan speed is expected to be an integer in the range the gateway and heating/cooling unit can accept (e.g. 1 to 5). If out of range, the value
-may be clamped at the limits. Passing an empty value or 0 will cause the fan speed mode to be set to "Auto" if the gateway supports
-it for the configured heating/cooling unit.
+may be clamped at the limits. Passing an empty value or 0 will cause the fan speed mode to be set to "AUTO" if the gateway supports
+it for the configured heating/cooling unit. The speeds supported by the configured unit can be seen by examining the `LimitsFANSP` state
+variable.
 
 The `GetCurrentFanSpeed` action returns a single argument, `CurrentFanSpeed`, with the gateway's last-reported fan speed (an integer
-or "Auto").
+or text).
 
 <pre>
     luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetCurrentFanSpeed", { NewCurrentFanSpeed=2 }, <i>deviceNumber</i> )
@@ -186,28 +193,45 @@ current position, within the limits of the air handling unit.
     luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "VaneRight", { }, <i>deviceNumber</i> )
 </pre>
 
+If any of these actions are invoked when the current vane mode is AUTO, SWING, PULSE, etc., the vanes will go to fixed positioning.
+Invoking `VaneUp` or `VaneLeft` when the vanes are in the respective extreme position will cause the vanes to transition to "SWING"
+mode if that mode is available on the device.
+
 #### Action: SetLeftRightVanePosition, GetLeftRightVanePosition, SetUpDownVanePosition, GetUpDownVanePosition ####
 
 The `Set___VanePosition` actions set the vane position of the air handling unit to the specified setting, if possible. These actions
-take a single parameter, `NewPosition`, which must be an integer greater than zero (limits are determined by the air handler and vary 
-from device to device), or "Auto". The value zero is also interpreted as "Auto".
+take a single parameter, `NewPosition`, which must be an integer greater than zero (limits are determined by the air handler and vary
+from device to device). If zero (0) or no position is given, the plugin will attempt to set "AUTO" position. Any valid position supported
+by the device can be given; for example, some devices support SWING and PULSE modes. The range of values accepted by the configured air
+handler can be seen by examining the `LimitsVANEUD` and `LimitsVANELR` state variables.
 
 <pre>
     luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetLeftRightVanePosition", { NewPosition=3 }, <i>deviceNumber</i> )
-    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetUpDownVanePosition", { NewPosition="Auto" }, <i>deviceNumber</i> )
+    luup.call_action( "urn:toggledbits-com:serviceId:IntesisWMPGateway1", "SetUpDownVanePosition", { NewPosition="AUTO" }, <i>deviceNumber</i> )
 </pre>
 
 #### Action: GetSignalStrength ####
 
-The `GetSignalStrength` action returns a single argument (`SignalDB`) containing the WiFi signal strength reported by the gateway. 
+The `GetSignalStrength` action returns a single argument (`SignalDB`) containing the WiFi signal strength reported by the gateway.
 This is usually a negative integer (&lt; -96 is a bad/unacceptable signal; -86 to -95 is weak; -85 to -81 is good; -80 to -71 is very
 good; and anything &gt;= -70 is excellent).
+
+#### Variable: LimitsMODE, LimitsSETPTEMP, LimitsFANSP, etc ####
+
+The variables beginning with `Limits` (e.g. `LimitsMODE`) contain the values, as a comma-separated list, that are acceptable to the
+configured air handler as reported by the gateway. The `LimitsSETPTEMP` is a two-element list containing the minimum and maximum acceptable
+setpoint temperatures in tenths of degrees Celsius. All other `Limits` variables are simple lists of the acceptable values, not ranges.
+
+Note that the limit values reported by the IntesisBox gateway are not always accurate for the air handler, and in some cases even conflict
+within the gateway. For example, it has been noted that at least one unit configuration will report "AUTO" as an acceptable value for "FANSP"
+(fan speed), yet attempts to set "AUTO" on the fan speed never work and always result in a numeric fan speed value. On other unit configurations
+it works fine.
 
 #### Variable: ForceUnits ####
 
 By default, the plug-in will adjust its UI to display temperatures in the default units configured for the Vera controller. If the Vera's
 units are changed, the plug-in will self-reconfigure. If the user has some reason to need the plug-in to present its interfaces in units
-over than the Vera's configured unit, setting `ForceUnits` to "C" or "F" will cause the plug-in to display Fahrenheit or Celsius, 
+over than the Vera's configured unit, setting `ForceUnits` to "C" or "F" will cause the plug-in to display Fahrenheit or Celsius,
 respectively.
 
 Note that this variable is not automatically created with the device. You will need to create it using the "Create Service" tab in the
@@ -215,6 +239,18 @@ device's Advanced settings page (not the gateway device--the IntesisBox thermost
 
 Each IntesisDevice1 instance may have its own copy of this variable, thus making it possible that the displayed units of each thermostat
 may be different, as a user may need.
+
+#### IntesisERRSTATUS and IntesisERRCODE ####
+
+The plugin will store the values of any `ERRSTATUS` and `ERRCODE` reports from the gateway device. Because the meaning of these codes varies from air handler
+to air handler, the plugin does not act on them, but since they are stored, user-provided scripts could interpret the values and react using specific
+knowledge of the air handling unit installed. 
+
+The `ERRCODE` variable will contain a comma-separated list of the last 10 error codes reported. It can be safely written to an empty (zero-length) string 
+value if an external facility is used to read and interpret the codes and it needs to mark the errors "handled."
+
+Note that the IS-IR-WMP-1 gateway does not have two-way communication with the configured air handling device, so these values are not available when
+using that model gateway, or any future similar model (i.e. models that are not hardwired to the air handler and have two-way communication with it).
 
 ### Other Services ###
 
@@ -224,14 +260,14 @@ In addition to the above services, the IntesisWMPGateway plug-in implements the 
 * `urn:upnp-org:serviceId:HVAC_FanOperatingMode1`: `SetMode` (Auto, ContinuousOn), `GetMode`
 * `urn:upnp-org:serviceId:TemperatureSetpoint1`: `SetCurrentSetpoint`, `GetCurrentSetpoint`
 
-The plug-in also provides many of the state variables behind these services. In addition, the plug-in maintains the `CurrentTemperature` 
+The plug-in also provides many of the state variables behind these services. In addition, the plug-in maintains the `CurrentTemperature`
 state variable of the `urn:upnp-org:serviceId:TemperatureSensor1` service (current ambient temperature as reported by the gateway).
 
 **IMPORTANT:** The model for handling fan mode differs significantly between Intesis and Vera. In Vera/UPnP, setting the fan mode to `ContinuousOn`
 turns the fan on, but does not change the operating mode of the air handling unit. For example, with the fan mode set to ContinuousOn,
 if the AHU is cooling, it continues to cool until setpoint is achieved, at which time cooling shuts down but the fan continues to operate.
 In Intesis, to get continuous operation of the fan, one sets the (operating) mode to "Fan", which will stop the AHU from heating or cooling.
-Because of this, the plugin does not react to the `SetMode` action in service `urn:upnp-org:serviceId:HVAC_FanOperatingMode1` 
+Because of this, the plugin does not react to the `SetMode` action in service `urn:upnp-org:serviceId:HVAC_FanOperatingMode1`
 (it is quietly ignored).
 In addition, the `FanStatus` state can only be deduced in the "Off" or "FanOnly" operating modes, in which case the status will
 be "Off" or "On" respectively; in all other cases it will be "Unknown".
@@ -245,12 +281,8 @@ temperature is within the setpoint hysteresis (aka the "deadband"), then ModeSta
 not doing anything. When the current temperature
 deviates too far from the setpoint and the call for heat comes, then ModeStatus goes to "HeatOn", indicating that the air handling unit is
 then providing heat. In other words, Vera says ModeStatus is effectively a confirmation of ModeTarget, while
-UPnP says that ModeTarget is the goal, and ModeStatus reflects the at-the-moment state of the unit's activity toward the goal. 
+UPnP says that ModeTarget is the goal, and ModeStatus reflects the at-the-moment state of the unit's activity toward the goal.
 Vera, then, has had to introduce a new non-standard variable (ModeState) to communicate what could and should be communicated in the service-standard variable.
-
-### IntesisERRSTATUS and IntesisERRCODE ###
-
-The plugin will store the values of any ERRSTATUS and ERRCODE reports from the gateway device. Because the meaning of these codes varies from device to device, the plugin does not act on them, but since they are stored, user-provided scripts could interpret the values and react using specific knowledge of the air handling unit installed.
 
 ## ImperiHome Integration ##
 
@@ -262,7 +294,7 @@ To connect Intesis WMP Gateway to ImperiHome:
 1. In ImperiHome, go into **My Objects**
 1. Click **Add a new object**
 1. Choose **ImperiHome Standard System**
-1. In the **Local base API** field, enter 
+1. In the **Local base API** field, enter
    `http://your-vera-local-ip/port_3480/data_request?id=lr_IntesisWMPGateway&command=ISS`
 1. Click **Next** to connect.
 
