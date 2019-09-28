@@ -99,26 +99,23 @@ local devicesByMAC = {}
 local isALTUI = false
 local isOpenLuup = false
 
-local function dump(t)
+local function dump(t, seen)
 	if t == nil then return "nil" end
+	if seen == nil then seen = {} end
 	local sep = ""
 	local str = "{ "
 	for k,v in pairs(t) do
 		local val
 		if type(v) == "table" then
-			val = dump(v)
-		elseif type(v) == "function" then
-			val = "(function)"
+			if seen[v] then val = "(recursion)"
+			else
+				seen[v] = true
+				val = dump(v, seen)
+			end
 		elseif type(v) == "string" then
 			val = string.format("%q", v)
-		elseif type(v) == "number" then
-			local d = v - os.time()
-			if d < 0 then d = -d end
-			if d <= 86400 then
-				val = string.format("%d (%s)", v, os.date("%X", v))
-			else
-				val = tostring(v)
-			end
+		elseif type(v) == "number" and (math.abs(v-os.time()) <= 86400) then
+			val = tostring(v) .. "(" .. os.date("%x.%X", v) .. ")"
 		else
 			val = tostring(v)
 		end
@@ -133,10 +130,10 @@ local function L(msg, ...) -- luacheck: ignore 212
 	local str
 	local level = 50
 	if type(msg) == "table" then
-		str = msg["prefix"] .. msg["msg"]
-		level = msg["level"] or level
+		str = tostring(msg.prefix or _PLUGIN_NAME) .. ": " .. tostring(msg.msg or msg[1])
+		level = msg.level or level
 	else
-		str = _PLUGIN_NAME .. ": " .. msg
+		str = _PLUGIN_NAME .. ": " .. tostring(msg)
 	end
 	str = string.gsub(str, "%%(%d+)", function( n )
 			n = tonumber(n, 10)
@@ -146,17 +143,13 @@ local function L(msg, ...) -- luacheck: ignore 212
 				return dump(val)
 			elseif type(val) == "string" then
 				return string.format("%q", val)
-			elseif type(val) == "number" then
-				local d = val - os.time()
-				if d < 0 then d = -d end
-				if d <= 86400 then
-					val = string.format("%d (time %s)", val, os.date("%X", val))
-				end
+			elseif type(val) == "number" and math.abs(val-os.time()) <= 86400 then
+				return tostring(val) .. "(" .. os.date("%x.%X", val) .. ")"
 			end
 			return tostring(val)
 		end
 	)
-	luup.log(str, level)
+	luup.log(str, math.max(1,level))
 	-- if traceMode then trace('log',str) end
 end
 
@@ -177,7 +170,7 @@ end
 
 -- Constraint the argument to the specified min/max
 local function constrain( n, nMin, nMax )
-	n = tonumber(n, 10) or nMin
+	n = tonumber(n) or nMin
 	if n < nMin then return nMin end
 	if nMax ~= nil and n > nMax then return nMax end
 	return n
@@ -185,16 +178,34 @@ end
 
 -- Convert F to C
 local function FtoC( temp )
-	temp = tonumber(temp, 10)
+	temp = tonumber(temp)
 	assert( temp ~= nil )
 	return ( temp - 32 ) * 5 / 9
 end
 
 -- Convert C to F
 local function CtoF( temp )
-	temp = tonumber(temp, 10)
+	temp = tonumber(temp)
 	assert( temp ~= nil )
 	return ( temp * 9 / 5 ) + 32
+end
+
+-- See if value is within limits (default OK)
+local function inLimit( lim, val, dev )
+	if type(val) == "number" and devData[dev].limits[lim].range then
+		if devData[dev].limits[lim].range.min and val < devData[dev].limits[lim].range.min then return false end
+		if devData[dev].limits[lim].range.max and val > devData[dev].limits[lim].range.max then return false end
+		return true
+	end
+	val = tostring(val)
+	if (devData[dev].limits or {})[lim] then
+		for _,v in ipairs(devData[dev].limits[lim].values or {}) do
+			if val == v then return true end
+		end
+		return false
+	end
+	-- No limit data, just say it's OK.
+	return true
 end
 
 local function askLuci(p)
@@ -628,9 +639,47 @@ local function handleCHN( unit, segs, pdev )
 	end
 end
 
--- Handle LIMITS (we don't)
+-- Handle LIMITS
 function handleLIMITS( unit, segs, pdev )
 	D("handleLIMITS(%1,%2,%3)", unit, segs, pdev)
+	if #segs >= 2 then
+		local _,_,obj,lim = string.find( segs[2], "([^,]+),%[(.*)%]" )
+		if obj then
+			devData[pdev].limits[obj] = { values=split( lim ) or {} }
+			luup.variable_set( DEVICESID, "Limits" .. obj, lim, pdev )
+			local mmin, mmax
+			for _,v in ipairs(devData[pdev].limits[obj].values) do
+				local vn = tonumber(v)
+				if vn then
+					if mmin == nil or vn < mmin then mmin = vn end
+					if mmax == nil or vn > mmax then mmax = vn end
+				end
+			end
+			if mmin or mmax then
+				devData[pdev].limits[obj].range = { ['min']=mmin, ['max']=mmax }
+			end
+		end
+		if obj == "MODE" then
+			-- For mode, we may need to enable or disable certain UI buttons
+			local mm = { COOL=0, HEAT=0, AUTO=0, FAN=0, DRY=0 }
+			for _,v in ipairs( devData[pdev].limits[obj].values ) do
+				luup.variable_set( DEVICESID, "Mode"..v, 1, pdev )
+				mm[v] = nil
+			end
+			for k in pairs(mm) do
+				luup.variable_set( DEVICESID, "Mode"..k, 0, pdev )
+			end
+		elseif obj == "SETPTEMP" then
+			local r = devData[pdev].limits[obj].range or {}
+			-- Limits are always degC x 10
+			if r.min then
+				devData[pdev].sysTemps.minimum = devData[pdev].sysTemps.unit == "F" and CtoF(r.min / 10) or (r.min / 10)
+			end
+			if r.max then
+				devData[pdev].sysTemps.maximum = devData[pdev].sysTemps.unit == "F" and CtoF(r.max / 10) or (r.max / 10)
+			end
+		end
+	end
 end
 
 -- Handle ACK
@@ -833,6 +882,8 @@ local function passGenericDiscovery( mac, ip, gateway, dev )
 	)
 end
 
+local infocmd = { "LIMITS:MODE","LIMITS:SETPTEMP","LIMITS:FANSP","LIMITS:VANEUD","LIMITS:VANELR" }
+
 function deviceTick( dargs )
 	D("deviceTick(%1), luup.device=%2", dargs, luup.device)
 	local dev, stamp = dargs:match("^(%d+):(%d+):(.*)$")
@@ -880,6 +931,10 @@ function deviceTick( dargs )
 		elseif devData[dev].lastSendTime + intPing <= now then
 			sendCommand("PING", dev)
 			nextDelay = 1
+		elseif devData[dev].lastinfo < #infocmd then
+			devData[dev].lastinfo = devData[dev].lastinfo + 1
+			sendCommand(infocmd[devData[dev].lastinfo], dev)
+			nextDelay = 2
 		end
 
 		-- When do we tick next?
@@ -982,6 +1037,8 @@ local function deviceStart( dev, parentDev )
 	devData[dev].lastRefresh = 0
 	devData[dev].lastCommand = ""
 	devData[dev].lastSendTime = 0
+	devData[dev].lastinfo = 0
+	devData[dev].limits = {}
 
 	-- Make sure the device is initialized. It may be new.
 	deviceRunOnce( dev, parentDev )
@@ -1217,26 +1274,29 @@ end
 -- Set fan speed. Empty/nil or 0 sets Auto.
 function actionSetCurrentFanSpeed( dev, newSpeed )
 	D("actionSetCurrentFanSpeed(%1,%2)", dev, newSpeed)
-	newSpeed = tonumber( newSpeed, 10 ) or 0
+	newSpeed = tonumber( newSpeed ) or 0
 	if newSpeed == 0 then
 		return sendCommand( "SET,1:FANSP,AUTO", dev )
 	end
-	newSpeed = constrain( newSpeed, 1, nil ) -- ??? high limit
-	return sendCommand( "SET,1:FANSP," .. newSpeed, dev )
+	if inLimit( "FANSP", newSpeed, dev ) then
+		return sendCommand( "SET,1:FANSP," .. newSpeed, dev )
+	end
+	L({level=2,msg="Fan speed %1 out of range"}, newSpeed)
+	return false
 end
 
 -- Speed up the fan (implies switch out of auto, presumably)
 function actionFanSpeedUp( dev )
 	D("actionFanSpeedUp(%1)", dev)
 	local speed = getVarNumeric( "IntesisFANSP", 0, dev, DEVICESID ) + 1
-	return actionSetCurrentFanSpeed( dev, speed )
+	return inLimit( "FANSP", speed, dev ) and actionSetCurrentFanSpeed( dev, speed ) or false
 end
 
 -- Speed up the fan (implies switch out of auto, presumably)
 function actionFanSpeedDown( dev )
 	D("actionFanSpeedDown(%1)", dev)
 	local speed = getVarNumeric( "IntesisFANSP", 2, dev, DEVICESID ) - 1
-	return actionSetCurrentFanSpeed( dev, speed )
+	return inLimit( "FANSP", speed, dev ) and actionSetCurrentFanSpeed( dev, speed ) or false
 end
 
 -- FanSpeed1 service action for 0-100 fan speed (0 is auto for us)
@@ -1279,14 +1339,13 @@ function actionSetVaneUD( dev, newPos )
 	D("actionSetVaneUD(%1,%2)", dev, newPos)
 	if newPos == nil or string.upper(newPos) == "AUTO" then newPos = "AUTO" end
 	if newPos ~= "AUTO" then
-		newPos = tonumber( newPos, 10 )
-		if newPos == nil then
-			return false
+		newPos = tonumber( newPos ) or 0
+		if newPos < 0 then newPos = "SWING"
+		elseif newPos == 0 then newPos = "AUTO"
 		end
-		if newPos == 0 then
-			newPos = "AUTO"
-		else
-			newPos = constrain( newPos, 1, 9 ) -- LIMITS???
+		if not inLimit( "VANEUD", tostring(newPos), dev ) then
+			L({level=2,msg="Vane U-D position %1 is outside accepted range; ignored"}, newPos)
+			return false
 		end
 	end
 	return sendCommand( "SET,1:VANEUD," .. tostring(newPos), dev )
@@ -1295,17 +1354,18 @@ end
 -- Set vane up (relative)
 function actionVaneUp( dev )
 	D("actionVaneUp(%1)", dev )
-	local pos = getVarNumeric( "IntesisVANEUD", 0, dev, DEVICESID )
-	pos = constrain( pos - 1, 1, 9 )
-	return actionSetVaneUD( dev, pos )
+	local pos = getVarNumeric( "IntesisVANEUD", 0, dev, DEVICESID ) - 1
+	if pos <= 0 and inLimit( "VANEUD", "SWING", dev ) then
+		return actionSetVaneUD( dev, -1 )
+	end
+	return inLimit( "VANEUD", pos, dev ) and actionSetVaneUD( dev, pos ) or false
 end
 
 -- Set vane down (relative)
 function actionVaneDown( dev )
 	D("actionVaneDown(%1)", dev )
-	local pos = getVarNumeric( "IntesisVANEUD", 0, dev, DEVICESID )
-	pos = constrain( pos + 1, 1, 9 )
-	return actionSetVaneUD( dev, pos )
+	local pos = getVarNumeric( "IntesisVANEUD", 0, dev, DEVICESID ) + 1
+	return inLimit( "VANEUD", pos, dev ) and actionSetVaneUD( dev, pos ) or false
 end
 
 -- Set vane (left/right) position.
@@ -1313,14 +1373,13 @@ function actionSetVaneLR( dev, newPos )
 	D("actionSetVaneLR(%1,%2)", dev, newPos)
 	if newPos == nil or string.upper(newPos) == "AUTO" then newPos = "AUTO" end
 	if newPos ~= "AUTO" then
-		newPos = tonumber( newPos, 10 )
-		if newPos == nil then
-			return false
+		newPos = tonumber( newPos ) or 0
+		if newPos < 0 then newPos = "SWING"
+		elseif newPos == 0 then newPos = "AUTO"
 		end
-		if newPos == 0 then
-			newPos = "AUTO"
-		else
-			newPos = constrain( newPos, 1, 9 ) -- ??? LIMITS
+		if not inLimit( "VANELR", tostring(newPos), dev ) then
+			L({level=2,msg="Vane L-R position %1 is outside accepted range; ignored"}, newPos)
+			return false
 		end
 	end
 	return sendCommand( "SET,1:VANELR," .. tostring(newPos), dev )
@@ -1329,17 +1388,18 @@ end
 -- Vane left
 function actionVaneLeft( dev )
 	D("actionVaneLeft(%1)", dev )
-	local pos = getVarNumeric( "IntesisVANELR", 0, dev, DEVICESID )
-	pos = constrain( pos - 1, 1, 9 )
-	return actionSetVaneLR( dev, pos )
+	local pos = getVarNumeric( "IntesisVANELR", 0, dev, DEVICESID ) - 1
+	if pos <= 0 and inLimit( "VANELR", "SWING" ) then
+		return actionSetVaneLR( dev, -1 )
+	end
+	return inLimit( "VANELR", pos, dev ) and actionSetVaneLR( dev, pos ) or false
 end
 
 -- Vane right
 function actionVaneRight( dev )
 	D("actionVaneDown(%1)", dev )
-	local pos = getVarNumeric( "IntesisVANELR", 0, dev, DEVICESID )
-	pos = constrain( pos + 1, 1, 9 )
-	return actionSetVaneLR( dev, pos )
+	local pos = getVarNumeric( "IntesisVANELR", 0, dev, DEVICESID ) + 1
+	return inLimit( "VANELR", pos, dev ) and actionSetVaneLR( dev, pos ) or false
 end
 
 -- Set the device name
@@ -1578,6 +1638,43 @@ local function map( m, v, d )
 	return m[v]
 end
 
+-- A "safer" JSON encode for Lua structures that may contain recursive references.
+-- This output is intended for display ONLY, it is not to be used for data transfer.
+local stringify
+local function alt_json_encode( st, seen )
+	seen = seen or {}
+	str = "{"
+	local comma = false
+	for k,v in pairs(st) do
+		str = str .. ( comma and "," or "" )
+		comma = true
+		str = str .. '"' .. k .. '":'
+		if type(v) == "table" then
+			if seen[v] then str = str .. '"(recursion)"'
+			else
+				seen[v] = k
+				str = str .. alt_json_encode( v, seen )
+			end
+		else
+			str = str .. stringify( v, seen )
+		end
+	end
+	str = str .. "}"
+	return str
+end
+
+-- Stringify a primitive type
+stringify = function( v, seen )
+	if v == nil then
+		return "(nil)"
+	elseif type(v) == "number" or type(v) == "boolean" then
+		return tostring(v)
+	elseif type(v) == "table" then
+		return alt_json_encode( v, seen )
+	end
+	return string.format( "%q", tostring(v) )
+end
+
 local function getDevice( dev, pdev, v ) -- luacheck: ignore 212
 	local dkjson = require("dkjson")
 	if v == nil then v = luup.devices[dev] end
@@ -1603,6 +1700,7 @@ local function getDevice( dev, pdev, v ) -- luacheck: ignore 212
 	local key = "Device_Num_" .. dev
 	if d ~= nil and d[key] ~= nil and d[key].states ~= nil then d = d[key].states else d = nil end
 	devinfo.states = d or {}
+	devinfo.devdata = devData[dev] or {}
 	return devinfo
 end
 
@@ -1709,7 +1807,7 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
 				table.insert( st.devices, gwinfo )
 			end
 		end
-		return dkjson.encode( st ), "application/json"
+		return alt_json_encode( st ), "application/json"
 	end
 
 	return "<html><head><title>" .. _PLUGIN_NAME .. " Request Handler"
