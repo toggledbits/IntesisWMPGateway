@@ -1618,7 +1618,7 @@ function plugin_init(dev)
 				s = luup.variable_get( DEVICESID, "IntesisID", k ) or ""
 				if s ~= "" then
 					-- Pre-3.0 child has not been handled yet. Parent already have a child?
-					if luup.variable_get( MYSID, "IntesisID", dev ) then
+					if ( luup.variable_get( MYSID, "IntesisID", dev ) or "" ) == "" then
 						-- No gateway ID assigned to this parent yet. Move it.
 						D("plugin_init() assigning child's IntesisID to parent")
 						luup.variable_set( MYSID, "IntesisID", s, dev )
