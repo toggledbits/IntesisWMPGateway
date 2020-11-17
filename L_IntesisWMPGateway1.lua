@@ -52,7 +52,7 @@ local string = require("string")
 local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "2.4"
+local _PLUGIN_VERSION = "2.5develop-20102"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 020203
 
@@ -95,6 +95,9 @@ local DEFAULT_REFRESH = 64
 local runStamp = {}
 local devData = {}
 local devicesByMAC = {}
+local pluginDevice
+local intPing = DEFAULT_PING
+local intRefresh = DEFAULT_REFRESH
 
 local isALTUI = false
 local isOpenLuup = false
@@ -381,7 +384,8 @@ local function closeSocket( dev )
 	D("closeSocket(%1)", dev)
 	-- Deliberate sequence of events here!
 	devData[dev].isConnected = false
-	if devData[dev].sock ~= nil then
+	devData[dev].usingProxy = false
+	if devData[dev].sock then
 		local x = devData[dev].sock
 		devData[dev].sock = nil
 		x:close()
@@ -398,6 +402,58 @@ local function configureSocket( sock, dev )
 	devData[dev].lastdtm = 0
 	devData[dev].lastRefresh = 0
 	devData[dev].lastSendTime = os.time()
+	devData[dev].lastIncoming = os.time()
+end
+
+local function _conn( dev, ip, port )
+	D("_conn(%1,%2,%3)", dev, ip, port)
+	devData[dev].usingProxy = false
+	local sock = socket.tcp()
+	if not sock then
+		return false, "Can't get socket for connection"
+	end
+	-- Try SockProxy first
+	local tryProxy = getVarNumeric( "UseProxy", 1, pluginDevice, MYSID ) ~= 0
+	if tryProxy then
+		sock:settimeout( 15 )
+		local st,se = sock:connect( "127.0.0.1", 2504 )
+		if st then
+			local ans,ae = sock:receive("*l")
+			if ans and ans:match("^OK TOGGLEDBITS%-SOCKPROXY") then
+				sock:send(string.format("CONN %s:%d NTFY=%d/%s/HandleReceive RTIM=%d PACE=1\n",
+					ip, port, dev, DEVICESID, 600*1000 ))
+				ans,ae = sock:receive("*l")
+				if ans and ans:match("^OK CONN") then
+					D("_conn() connected using proxy")
+					devData[dev].usingProxy = true
+					intPing = 300
+					intRefresh = 3 * intPing
+					return true, sock
+				end
+			end
+			D("_conn() proxy negotiation failed: %1,%2", ans, ae)
+			sock:shutdown("both")
+		else
+			D("_conn() proxy connection failed: %1", se)
+		end
+		-- No good. Close socket, make a new one.
+		sock:close()
+		sock = socket.tcp()
+	end
+	sock:settimeout( 15 )
+	local r, e = sock:connect( ip, port )
+	if r then
+		D("_conn() direct connection", ip, port)
+		if tryProxy then
+			L({level=2,msg="%1 (#%2) connected without SockProxy; may be down or not installed. See https://github.com/toggledbits/sockproxyd"},
+				(luup.devices[dev] or {}).description, dev)
+		end
+		intPing = getVarNumeric( "PingInterval", DEFAULT_PING, dev, DEVICESID )
+		intRefresh = getVarNumeric( "RefreshInterval", DEFAULT_REFRESH, dev, DEVICESID )
+		return true, sock
+	end
+	sock:close()
+	return false, string.format("Connection to %s:%s failed: %s", ip, port, tostring(e))
 end
 
 -- Open TCP connection to IntesisBox device
@@ -410,59 +466,38 @@ local function deviceConnectTCP( dev )
 	local ip = luup.variable_get( DEVICESID, "IPAddress", dev ) or ""
 	local port = getVarNumeric( "TCPPort", 3310, dev, DEVICESID )
 	D("deviceConnectTCP() connecting to %1:%2...", ip, port )
-	local sock, err = socket.tcp()
-	if sock then
-		sock:settimeout( 5, "b" )
-		sock:settimeout( 5, "r" )
-		local status
-		if ip ~= "" then
-			status, err = sock:connect( ip, port )
-		else
-			status, err = false, "IP not configured"
-		end
-		if not status then
-			L("Can't open %1 (%2) at %3:%4, %5", dev, luup.devices[dev].description, ip, port, err)
-			devData[dev].isConnected = false
-			sock:close()
+	local status,sock = _conn( dev, ip, port )
+	if status then
+		configureSocket( sock, dev )
+		L("%1 (#%2) connected at %3:%4", luup.devices[dev].description, dev, ip, port)
+		return true
+	else
+		L("Can't open %1 (%2) at %3:%4, %5", dev, luup.devices[dev].description, ip, port, sock)
+		devData[dev].isConnected = false
 
-			-- See if IP address has changed
-			D("deviceConnectTCP() see if IP address changed")
-			local newIPs = getIPforMAC( luup.devices[dev].id, dev )
-			D("deviceConnectTCP() newIPs=%1", newIPs)
-			if newIPs ~= nil then
-				for _,newIP in ipairs( newIPs ) do
-					if newIP.ip ~= ip then -- don't try what already failed
-						D("deviceConnectTCP() attempting connect to %1:%2", newIP.ip, port)
-						sock = socket.tcp() -- get a new socket
-						sock:settimeout( 5, "b" )
-						sock:settimeout( 5, "r" )
-						status, err = sock:connect( newIP.ip, port )
-						if status then
-							-- Good connect! Store new address.
-							L("IP address for %1 (%2) has changed, was %3, now %4", dev, luup.devices[dev].description, ip, newIP.ip)
-							luup.variable_set( DEVICESID, "IPAddress", newIP.ip, dev )
-							configureSocket( sock, dev )
-							return true
-						end
-						D("deviceConnectTCP() failed on %1, %2", newIP.ip, err)
-						sock:close()
-					end
+		-- See if IP address has changed
+		D("deviceConnectTCP() see if IP address changed")
+		local newIPs = getIPforMAC( luup.devices[dev].id, dev )
+		D("deviceConnectTCP() newIPs=%1", newIPs)
+		for _,newIP in ipairs( newIPs or {} ) do
+			if newIP.ip ~= ip then -- don't try what already failed
+				D("deviceConnectTCP() attempting connect to %1:%2", newIP.ip, port)
+				status, sock = _conn( dev, newIP.ip, port )
+				if status then
+					-- Good connect! Store new address.
+					L("IP address for %1 (%2) has changed, was %3, now %4", dev, luup.devices[dev].description, ip, newIP.ip)
+					luup.variable_set( DEVICESID, "IPAddress", newIP.ip, dev )
+					configureSocket( sock, dev )
+					return true
 				end
-				-- None of these IPs worked, or, one did... how do we know...
-				return false
-			else
-				return false
+				D("deviceConnectTCP() failed on %1, %2", newIP.ip, sock)
+				sock:close()
 			end
 		end
-	else
-		L("Can't create TCP socket: %1", err)
-		devData[dev].isConnected = false
-		return false
+		-- None of these IPs worked, or, one did... how do we know...
+		D("deviceConnectTCP() didn't find device MAC %1 at any IP", luup.devices[dev].id )
 	end
-
-	L("Successful connection to %1 for %2 (%3)", ip, dev, luup.devices[dev].description)
-	configureSocket( sock, dev )
-	return true
+	return false
 end
 
 -- Send a command
@@ -770,6 +805,7 @@ local function deviceReceive( dev )
 			-- Timeouts are not a problem, but we stop looping when we get one.
 			if err ~= "timeout" then
 				D("deviceReceive() error %1", err)
+				closeSocket( dev )
 			end
 			break
 		end
@@ -916,11 +952,9 @@ function deviceTick( dargs )
 	else
 		-- No data received, idle stuff
 		local now = os.time()
-		local intPing = getVarNumeric( "PingInterval", DEFAULT_PING, dev, DEVICESID )
-		local intRefresh = getVarNumeric( "RefreshInterval", DEFAULT_REFRESH, dev, DEVICESID )
 
-		-- No data received. By default, next delay is 2 x previous delay, max 16
-		nextDelay = math.min( 16, devData[dev].lastDelay * 2 )
+		-- No data received. By default, next delay is 2 x previous delay, max 64
+		nextDelay = math.min( 64, devData[dev].lastDelay * 2 )
 
 		-- If it's been more than two refresh intervals or three pings since we
 		-- received some data, we may be in trouble... These tests are in order of priority
@@ -976,7 +1010,7 @@ local function deviceRunOnce( dev, parentDev )
 		luup.variable_set(DEVICESID, "Name", "", dev)
 		luup.variable_set(DEVICESID, "SignalDB", "", dev)
 		luup.variable_set(DEVICESID, "DisplayTemperature", "--.-", dev)
-		luup.variable_set(DEVICESID, "DisplayStatus", "", dev)
+		luup.variable_set(DEVICESID, "DisplayStatus", "Configuring", dev)
 		luup.variable_set(DEVICESID, "ConfigurationUnits", "C", dev)
 		luup.variable_set(DEVICESID, "Failure", 0, dev )
 		-- Don't mess with IntesisID
@@ -1040,6 +1074,7 @@ local function deviceStart( dev, parentDev )
 	devData[dev].lastRefresh = 0
 	devData[dev].lastCommand = ""
 	devData[dev].lastSendTime = 0
+	devData[dev].lastIncoming = 0
 	devData[dev].lastinfo = 0
 	devData[dev].limits = {}
 
@@ -1429,6 +1464,11 @@ function actionDiscoverIP( dev, ipaddr )
 	end
 end
 
+function actionHandleReceive( dev, params )
+	D("actionHandleReceive(%1,%2)", dev, params)
+	deviceReceive( dev )
+end
+
 function actionSetDebug( dev, enabled )
 	D("actionSetDebug(%1,%2)", dev, enabled)
 	if enabled == 1 or enabled == "1" or enabled == true or enabled == "true" then
@@ -1458,11 +1498,12 @@ local function plugin_runOnce(dev)
 	if rev == 0 then
 		-- Initialize for new installation
 		D("runOnce() Performing first-time initialization!")
-		luup.variable_set(MYSID, "DisplayStatus", "", dev)
-		luup.variable_set(MYSID, "PingInterval", DEFAULT_PING, dev)
-		luup.variable_set(MYSID, "RefreshInterval", DEFAULT_REFRESH, dev)
+		luup.variable_set(MYSID, "DisplayStatus", "Configuring", dev)
+		luup.variable_set(MYSID, "PingInterval", "", dev)
+		luup.variable_set(MYSID, "RefreshInterval", "", dev)
 		luup.variable_set(MYSID, "RunStartupDiscovery", 1, dev)
 		luup.variable_set(MYSID, "DebugMode", 0, dev)
+		luup.variable_set(MYSID, "UseProxy", "", dev)
 		luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
 		return true -- tell caller to keep going
 	end
@@ -1558,6 +1599,7 @@ function plugin_init(dev)
 	L("starting version %1 for device %2 gateway", _PLUGIN_VERSION, dev )
 
 	-- Up front inits
+	pluginDevice = dev
 	devData[dev] = {}
 	math.randomseed( os.time() )
 

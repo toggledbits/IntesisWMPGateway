@@ -239,6 +239,14 @@
 			</run>
 		</action>
 		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
+			<name>HandleReceive</name>
+			<run>
+				IntesisWMPGateway.actionHandleReceive( lul_device, lul_settings )
+			</run>
+		</action>
+
+		<action>
 			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
 			<name>RunDiscovery</name>
 			<run>
