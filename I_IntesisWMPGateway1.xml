@@ -4,12 +4,24 @@
 		-- -------------------------------------------------------------------------------------------------------------------------
 		-- IntesisWMPGateway -- Intesis (ASCII) interface for Vera/MiOS
 		--
-		-- Copyright 2017 Patrick Rigney, All Rights Reserved
+		-- Copyright 2017,2020 Patrick Rigney, All Rights Reserved
 		--
 		-- See http://www.toggledbits.com/intesis/
 		-- -------------------------------------------------------------------------------------------------------------------------
 		function startupWMPGateway(dev)
 			luup.log("IntesisWMPGateway Plugin START-UP!")
+			local f = io.open( "/etc/cmh-ludl/clear-intesis", "r" )
+			if f then
+				f:close()
+				for k,v in pairs( luup.devices ) do
+					if v.device_type == "urn:schemas-toggledbits-com:device:IntesisWMPGateway:1" then
+						luup.call_action( "urn:micasaverde-com:serviceId:HomeAutomationGateway1", "DeleteDevice", { DeviceNum=k }, 0 )
+					end
+				end
+				os.remove( "/etc/cmh-ludl/clear-intesis" )
+				luup.log( "IntesisWMPGateway1: cleared all devices", 2 )
+				return false
+			end
 			IntesisWMPGateway = require("L_IntesisWMPGateway1")
 			intesisDeviceTick = IntesisWMPGateway.deviceTick
 			intesisDiscoveryTick = IntesisWMPGateway.discoveryTick
