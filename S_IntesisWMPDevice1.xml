@@ -6,25 +6,6 @@
     </specVersion>
     <serviceStateTable>
         <stateVariable sendEvents="yes">
-            <name>Failure</name>
-            <dataType>ui1</dataType>
-            <defaultValue>0</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="no">
-            <name>Name</name>
-            <dataType>string</dataType>
-            <defaultValue></defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>SignalDB</name>
-            <dataType>i4</dataType>
-            <defaultValue></defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="no">
-            <name>IntesisID</name>
-            <dataType>string</dataType>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
             <name>IntesisONOFF</name>
             <dataType>string</dataType>
             <defaultValue>OFF</defaultValue>
@@ -59,37 +40,21 @@
             <dataType>string</dataType>
             <defaultValue></defaultValue>
         </stateVariable>
+        <stateVariable sendEvents="no">
+            <name>A_ARG_TYPE_INT</name>
+            <dataType>i4</dataType>
+            <defaultValue></defaultValue>
+            <shortCode>unit</shortCode>
+        </stateVariable>
     </serviceStateTable>
     <actionList>
         <action>
-            <name>SetName</name>
+            <name>SetUnitID</name>
             <argumentList>
                 <argument>
-                    <name>NewName</name>
+                    <name>NewUnitID</name>
                     <direction>in</direction>
-                    <relatedStateVariable>Name</relatedStateVariable>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>GetName</name>
-            <argumentList>
-                <argument>
-                   <name>Name</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>Name</relatedStateVariable>
-                   <retval/>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>GetSignalStrength</name>
-            <argumentList>
-                <argument>
-                   <name>SignalDB</name>
-                   <direction>out</direction>
-                   <relatedStateVariable>SignalDB</relatedStateVariable>
-                   <retval/>
+                    <relatedStateVariable>A_ARG_TYPE_int</relatedStateVariable>
                 </argument>
             </argumentList>
         </action>
@@ -184,24 +149,6 @@
         <action>
             <name>VaneDown</name>
             <argumentList>
-            </argumentList>
-        </action>
-        <action>
-            <name>HandleReceive</name>
-            <argumentList>
-                <argument>
-                    <name>Pid</name>
-                    <direction>in</direction>
-                </argument>
-            </argumentList>
-        </action>
-        <action>
-            <name>SetDebug</name>
-            <argumentList>
-                <argument>
-                    <name>debug</name>
-                    <direction>in</direction>
-                </argument>
             </argumentList>
         </action>
     </actionList>

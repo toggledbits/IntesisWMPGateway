@@ -5,8 +5,38 @@
         <minor>0</minor>
     </specVersion>
     <serviceStateTable>
+        <stateVariable sendEvents="no">
+            <name>Name</name>
+            <dataType>string</dataType>
+            <defaultValue></defaultValue>
+            <shortCode>name</shortCode>
+        </stateVariable>
+        <stateVariable sendEvents="yes">
+            <name>SignalDB</name>
+            <dataType>i4</dataType>
+            <defaultValue></defaultValue>
+        </stateVariable>
+        <stateVariable sendEvents="no">
+            <name>IntesisID</name>
+            <dataType>string</dataType>
+        </stateVariable>
+        <stateVariable sendEvents="no">
+            <name>IPAddress</name>
+            <dataType>string</dataType>
+            <shortCode>ipaddress</shortCode>
+        </stateVariable>
+        <stateVariable sendEvents="no">
+            <name>Failure</name>
+            <dataType>boolean</dataType>
+            <shortCode>failure</shortCode>
+        </stateVariable>
     </serviceStateTable>
     <actionList>
+        <action>
+            <name>AddUnit</name>
+            <argumentList>
+            </argumentList>
+        </action>
         <action>
             <name>RunDiscovery</name>
             <argumentList>
@@ -27,6 +57,47 @@
                 <argument>
                    <name>IPAddress</name>
                    <direction>in</direction>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>GetSignalStrength</name>
+            <argumentList>
+                <argument>
+                   <name>SignalDB</name>
+                   <direction>out</direction>
+                   <relatedStateVariable>SignalDB</relatedStateVariable>
+                   <retval/>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>SetName</name>
+            <argumentList>
+                <argument>
+                    <name>NewName</name>
+                    <direction>in</direction>
+                    <relatedStateVariable>Name</relatedStateVariable>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>GetName</name>
+            <argumentList>
+                <argument>
+                   <name>Name</name>
+                   <direction>out</direction>
+                   <relatedStateVariable>Name</relatedStateVariable>
+                   <retval/>
+                </argument>
+            </argumentList>
+        </action>
+        <action>
+            <name>HandleReceive</name>
+            <argumentList>
+                <argument>
+                    <name>Pid</name>
+                    <direction>in</direction>
                 </argument>
             </argumentList>
         </action>

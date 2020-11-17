@@ -11,8 +11,7 @@
 		function startupWMPGateway(dev)
 			luup.log("IntesisWMPGateway Plugin START-UP!")
 			IntesisWMPGateway = require("L_IntesisWMPGateway1")
-			intesisDeviceTick = IntesisWMPGateway.deviceTick
-			intesisDiscoveryTick = IntesisWMPGateway.discoveryTick
+			intesisTaskTick = IntesisWMPGateway.plugin_tick
 			intesisVarChanged = IntesisWMPGateway.varChanged
 			intesisRequestHandler = IntesisWMPGateway.plugin_requestHandler
 			luup.register_handler("intesisRequestHandler", "IntesisWMPGateway")
@@ -123,17 +122,9 @@
 
 		<action>
 			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-			<name>SetName</name>
+			<name>SetUnitID</name>
 			<run>
-				-- Set the device name.
-				IntesisWMPGateway.actionSetName( lul_device, lul_settings.NewName )
-			</run>
-		</action>
-		<action>
-			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPDevice1</serviceId>
-			<name>GetName</name>
-			<run>
-				-- Luup takes care of returning relatedStateVariable
+				return IntesisWMPGateway.actionSetUnitID( lul_device, lul_settings.NewUnitID or "" )
 			</run>
 		</action>
 		<action>
@@ -248,6 +239,13 @@
 
 		<action>
 			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>AddUnit</name>
+			<run>
+				IntesisWMPGateway.actionAddUnit( lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
 			<name>RunDiscovery</name>
 			<run>
 				IntesisWMPGateway.actionRunDiscovery( lul_device )
@@ -265,6 +263,21 @@
 			<name>DiscoverIP</name>
 			<run>
 				IntesisWMPGateway.actionDiscoverIP( lul_device, lul_settings.IPAddress )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>SetName</name>
+			<run>
+				-- Set the device name.
+				IntesisWMPGateway.actionSetName( lul_device, lul_settings.NewName )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:toggledbits-com:serviceId:IntesisWMPGateway1</serviceId>
+			<name>GetName</name>
+			<run>
+				-- Luup takes care of returning relatedStateVariable
 			</run>
 		</action>
 		<action>
