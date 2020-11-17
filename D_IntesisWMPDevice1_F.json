@@ -642,7 +642,7 @@
 					"left": 0,
 					"Label": {
 						"lang_tag": "wmp_about",
-						"text": "Intesis WMP Gateway plug-in v2.4 &copy; 2017,2018 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+						"text": "Intesis WMP Gateway plug-in v2.4 &copy; 2017,2018,2020 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
 					},
 					"Display": {
 						"Top": 270,
