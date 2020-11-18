@@ -1,6 +1,14 @@
 {
 	"default_icon": "https://www.toggledbits.com/assets/intesis/wmp_mode_auto.png",
-	"state_icons": [ ],
+	"state_icons": [{
+		"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
+		"conditions": [{
+			"service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+			"variable": "Failure",
+			"operator": "==",
+			"value": 1
+		}]
+	}],
 	"x": "2",
 	"y": "4",
 	"inScene": "1",
@@ -58,8 +66,7 @@
 					"y": "1"
 				}
 			],
-			"Control": [
-				{
+			"Control": [{
 					"ControlGroup": "1",
 					"ControlType": "variable",
 					"top": "0.5",
@@ -214,6 +221,21 @@
 						"Height": 48
 					}
 				},
+				{
+					"ControlType": "label",
+					"top": "0.2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "wmp_gw_dmsg",
+						"text": "<b>Important!</b> Your IntesisBox device(s) must be powered on and connected to your network for any of these forms of discovery to work. If discovery is not finding your device, power-cycle the device and try again. If it still fails, your device may not be compatible with this plugin."
+					},
+					"Display": {
+						"Top": 250,
+						"Left": 0,
+						"Width": 630,
+						"Height": 96
+					}
+				},
 
 
 				{
@@ -225,8 +247,8 @@
 						"text": "Add Unit"
 					},
 					"Display": {
-						"Top": 270,
-						"Left": 150,
+						"Top": 320,
+						"Left": 0,
 						"Width": 120,
 						"Height": 25
 					},
@@ -246,8 +268,8 @@
 						"text": "If you have additional units controlled by this gateway, click \"Add Unit\" to create a new device for each additional unit."
 					},
 					"Display": {
-						"Top": 270,
-						"Left": 0,
+						"Top": 320,
+						"Left": 150,
 						"Width": 630,
 						"Height": 48
 					}
@@ -260,10 +282,10 @@
 					"left": "0",
 					"Label": {
 						"lang_tag": "wmp_gw_about",
-						"text": "<b>Important!</b> Your IntesisBox device(s) must be powered on and connected to your network for any of these forms of discovery to work. If discovery is not finding your device, power-cycle the device and try again. If it still fails, your device may not be compatible with this plugin.<br/>&nbsp;<br/>Intesis WMP Gateway Plugin ver 3.0 &#169; 2017,2020 Patrick H. Rigney, All Rights Reserved. Docs and license at <a href=\"http://www.toggledbits.com/intesis\" target=\"_blank\">https://www.toggledbits.com/intesis</a>. Please consider <a href=\"https://www.toggledbits.com/donate\" target=\"_blank\">making a small donation</a> for ongoing support of this project."
+						"text": "Intesis WMP Gateway Plugin ver 3.0 &#169; 2017,2020 Patrick H. Rigney, All Rights Reserved. Docs and license at <a href=\"http://www.toggledbits.com/intesis\" target=\"_blank\">https://www.toggledbits.com/intesis</a>. Please consider <a href=\"https://www.toggledbits.com/donate\" target=\"_blank\">making a small donation</a> for ongoing support of this project."
 					},
 					"Display": {
-						"Top": 300,
+						"Top": 360,
 						"Left": 0,
 						"Width": 630,
 						"Height": 96

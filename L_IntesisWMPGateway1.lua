@@ -56,7 +56,7 @@ local _PLUGIN_VERSION = "3.0develop-20232"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 020203
 
-local debugMode = false
+local debugMode = true
 -- local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -198,6 +198,56 @@ local function constrain( n, nMin, nMax )
 	if n < nMin then return nMin end
 	if nMax ~= nil and n > nMax then return nMax end
 	return n
+end
+
+
+-- Initialize a variable if it does not already exist.
+local function initVar( sid, name, dflt, dev )
+	A( dev ~= nil and sid ~= nil)
+	local currVal = luup.variable_get( sid, name, dev )
+	if currVal == nil then
+		luup.variable_set( sid, name, tostring(dflt), dev )
+		return tostring(dflt)
+	end
+	return currVal
+end
+
+-- Set variable, only if value has changed.
+local function setVar( sid, name, val, dev )
+	A( dev ~= nil and sid ~= nil)
+	val = (val == nil) and "" or tostring(val)
+	local s = luup.variable_get( sid, name, dev )
+	if s ~= val then
+		luup.variable_set( sid, name, val, dev )
+	end
+	return s
+end
+
+-- Delete a state variable. Newer versions of firmware do this by setting nil;
+-- older versions require a request.
+local function deleteVar( sid, name, dev )
+	if luup.variable_get( sid, name, dev ) then
+		luup.variable_set( sid, name, "", dev )
+		-- For firmware > 1036/3917/3918/3919 http://wiki.micasaverde.com/index.php/Luup_Lua_extensions#function:_variable_set
+		luup.variable_set( sid, name, nil, dev )
+	end
+end
+
+-- Get variable with possible default
+local function getVar( name, dflt, dev, sid )
+	A( name ~= nil and dev ~= nil and sid ~= nil )
+	local s,t = luup.variable_get( sid, name, dev )
+	if debugMode and s == nil then T({level=2,msg="Undefined state variable %1/%2 on #%3"}, sid or RSSID, name, dev) end
+	if s == nil or s == "" then return dflt,0 end
+	return s,t
+end
+
+-- Get numeric variable, or return default value if not set or blank
+local function getVarNumeric( name, dflt, dev, sid )
+	assert ( name ~= nil and dev ~= nil )
+	A( dflt==nil or type(dflt)=="number", "Supplied default is not numeric or nil" )
+	local s = getVar( name, dflt, dev, sid )
+	return type(s)=="number" and s or tonumber(s) or dflt
 end
 
 -- Convert F to C
@@ -396,7 +446,7 @@ end
 -- Tick handler for scheduler (TaskManager)
 -- @export
 function plugin_tick( stamp )
-	D("sonosTick(%1)", stamp)
+	D("plugin_tick(%1)", stamp)
 	scheduler.runReadyTasks( stamp )
 end
 
@@ -416,14 +466,16 @@ end
 -- See if value is within limits (default OK)
 local function inLimit( lim, val, dev )
 	A(dev and luup.devices[dev].device_type == DEVICETYPE)
-	if type(val) == "number" and devData[dev].limits[lim].range then
-		if devData[dev].limits[lim].range.min and val < devData[dev].limits[lim].range.min then return false end
-		if devData[dev].limits[lim].range.max and val > devData[dev].limits[lim].range.max then return false end
+	-- ??? Until we straighten out if LIMIT is available per unit, the limits are stored on the parent.
+	local pdev = luup.devices[dev].device_num_parent
+	if type(val) == "number" and devData[pdev].limits[lim].range then
+		if devData[pdev].limits[lim].range.min and val < devData[pdev].limits[lim].range.min then return false end
+		if devData[pdev].limits[lim].range.max and val > devData[pdev].limits[lim].range.max then return false end
 		return true
 	end
 	val = tostring(val)
-	if (devData[dev].limits or {})[lim] then
-		for _,v in ipairs(devData[dev].limits[lim].values or {}) do
+	if (devData[pdev].limits or {})[lim] then
+		for _,v in ipairs(devData[pdev].limits[lim].values or {}) do
 			if val == v then return true end
 		end
 		return false
@@ -480,7 +532,7 @@ end
 
 -- Compute broadcast address (IP4)
 local function getSystemIP4BCast( dev )
-	local broadcast = luup.variable_get( MYSID, "DiscoveryBroadcast", dev ) or ""
+	local broadcast = getVar( "DiscoveryBroadcast", "", dev, MYSID )
 	if broadcast ~= "" then
 		return broadcast
 	end
@@ -545,30 +597,17 @@ end
 -- Try to resolve IP address to a MAC address. Same process as above.
 local function getMACforIP( ipaddr, dev )
 	D("getMACforIP(%1,%2)", ipaddr, dev)
-	assert(not isOpenLuup, "We don't know how to do this on openLuup, yet.")
+	A(not isOpenLuup, "We don't know how to do this on openLuup, yet.")
 	os.execute("/bin/ping -4 -q -c 3 " .. ipaddr)
 	return scanARP( dev, nil, ipaddr )
-end
-
--- Get numeric variable, or return default value if not set or blank
-local function getVarNumeric( name, dflt, dev, serviceId )
-	assert(name ~= nil)
-	assert(dev ~= nil)
-	if debugMode then assert(serviceId ~= nil) end
-	if serviceId == nil then serviceId = MYSID end
-	local s = luup.variable_get(serviceId, name, dev)
-	if (s == nil or s == "") then return dflt end
-	s = tonumber(s, 10)
-	if (s == nil) then return dflt end
-	return s
 end
 
 -- Set gateway status display. Also echos message to log.
 local function gatewayStatus( msg, dev )
 	msg = msg or ""
-	assert( dev ~= nil )
-	if msg ~= "" then L(msg) end -- don't clear clearing of status
-	luup.variable_set( MYSID, "DisplayStatus", msg, dev )
+	AP(dev)
+	if msg ~= "" then L(msg) end
+	setVar( MYSID, "DisplayStatus", msg, dev )
 end
 
 -- Find WMP device by MAC address
@@ -604,14 +643,18 @@ end
 local function closeSocket( dev )
 	D("closeSocket(%1)", dev)
 	-- Deliberate sequence of events here!
+	gatewayStatus("Disconnected!", dev)
+	local t = scheduler.getTask( 'receiver' )
+	if t then t:close() end
 	isConnected = false
-	usingProxy = false
 	if masterSocket then
 		local x = masterSocket
 		masterSocket = nil
 		x:close()
 	end
 end
+
+local deviceReceiveTask -- forward decl
 
 local function configureSocket( sock, dev )
 	-- Keep timeout shorts so problems don't cause watchdog restarts.
@@ -626,11 +669,14 @@ local function configureSocket( sock, dev )
 	lastSendTime = os.time()
 	lastIncoming = os.time()
 	lastCommand = ""
+	local t = scheduler.getTask( 'receiver' ) or
+		scheduler.Task:new( 'receiver', dev, deviceReceiveTask, { dev } )
+	t:delay( 1 )
 end
 
 local function _conn( dev, ip, port )
 	D("_conn(%1,%2,%3)", dev, ip, port)
-	devData[dev].usingProxy = false
+	usingProxy = false
 	local sock = socket.tcp()
 	if not sock then
 		return false, "Can't get socket for connection"
@@ -648,7 +694,7 @@ local function _conn( dev, ip, port )
 				ans,ae = sock:receive("*l")
 				if ans and ans:match("^OK CONN") then
 					D("_conn() connected using proxy")
-					devData[dev].usingProxy = true
+					usingProxy = true
 					intPing = 300
 					intRefresh = 3 * intPing
 					return true, sock
@@ -686,13 +732,14 @@ local function deviceConnectTCP( dev )
 
 	if isConnected and masterSocket then return true end
 
-	local ip = luup.variable_get( DEVICESID, "IPAddress", dev ) or ""
-	local port = getVarNumeric( "TCPPort", 3310, dev, DEVICESID )
+	local ip = getVar( "IPAddress", "", dev, MYSID )
+	local port = getVarNumeric( "TCPPort", 3310, dev, MYSID )
 	D("deviceConnectTCP() connecting to %1:%2...", ip, port )
 	local status,sock = _conn( dev, ip, port )
 	if status then
 		configureSocket( sock, dev )
 		L("%1 (#%2) connected at %3:%4", luup.devices[dev].description, dev, ip, port)
+		gatewayStatus( "Connected", dev )
 		return true
 	else
 		L("Can't open %1 (%2) at %3:%4, %5", dev, luup.devices[dev].description, ip, port, sock)
@@ -710,8 +757,9 @@ local function deviceConnectTCP( dev )
 				if status then
 					-- Good connect! Store new address.
 					L("IP address for %1 (%2) has changed, was %3, now %4", dev, luup.devices[dev].description, ip, newIP.ip)
-					luup.variable_set( DEVICESID, "IPAddress", newIP.ip, dev )
+					setVar( MYSID, "IPAddress", newIP.ip, dev )
 					configureSocket( sock, dev )
+					gatewayStatus( "Connected (new IP)", dev )
 					return true
 				end
 				D("deviceConnectTCP() failed on %1, %2", newIP.ip, sock)
@@ -721,6 +769,7 @@ local function deviceConnectTCP( dev )
 		-- None of these IPs worked, or, one did... how do we know...
 		D("deviceConnectTCP() didn't find device MAC %1 at any IP", luup.devices[dev].id )
 	end
+	gatewayStatus( "Not connected!", dev )
 	return false
 end
 
@@ -769,10 +818,10 @@ local function handleID( unit, segs, pdev, target )
 	D("handleID(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	local args
-	luup.variable_set( DEVICESID, "IntesisID", segs[2], pdev ) -- aka MAC
+	setVar( DEVICESID, "IntesisID", segs[2], pdev ) -- aka MAC
 	args = split( segs[2], "," )
-	luup.variable_set( DEVICESID, "Name", args[7] or "", pdev )
-	luup.variable_set( DEVICESID, "SignalDB", args[6] or "", pdev )
+	setVar( DEVICESID, "Name", args[7] or "", pdev )
+	setVar( DEVICESID, "SignalDB", args[6] or "", pdev )
 	luup.attr_set( "manufacturer", "Intesis", pdev )
 	luup.attr_set( "model", args[1] or "", pdev )
 end
@@ -786,28 +835,28 @@ end
 -- Handle CHN response
 -- Ex: CHN,1:MODE,COOL
 local function handleCHN( unit, segs, pdev, target )
-	D("handleCHN(%1,%2,%3,%4)", unit, segs, pdev)
+	D("handleCHN(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	local args
 	args = split( string.upper( segs[2] ), "," )
 	if args[1] == "ONOFF" then
 		-- The on/off state is separate from mode in Intesis, but part of mode in the
 		--   HVAC_UserOperatingMode1 service. See comments below on how we handle that.
-		luup.variable_set( DEVICESID, "IntesisONOFF", args[2], target )
+		setVar( DEVICESID, "IntesisONOFF", args[2], target )
 		if args[2] == "OFF" then
 			-- Note we don't touch LastMode here!
-			luup.variable_set( OPMODE_SID, "ModeTarget", MODE_OFF, target )
-			luup.variable_set( OPMODE_SID, "ModeStatus", MODE_OFF, target )
-			luup.variable_set( FANMODE_SID, "FanStatus", "Off", target )
+			setVar( OPMODE_SID, "ModeTarget", MODE_OFF, target )
+			setVar( OPMODE_SID, "ModeStatus", MODE_OFF, target )
+			setVar( FANMODE_SID, "FanStatus", "Off", target )
 		elseif args[2] == "ON" then
 			-- When turning on, restore state of LastMode.
-			local last = luup.variable_get( DEVICESID, "LastMode", target ) or MODE_AUTO
-			luup.variable_set( OPMODE_SID, "ModeTarget", last, target )
-			luup.variable_set( OPMODE_SID, "ModeStatus", last, target )
+			local last = getVar( "LastMode", MODE_AUTO, target, DEVICESID )
+			setVar( OPMODE_SID, "ModeTarget", last, target )
+			setVar( OPMODE_SID, "ModeStatus", last, target )
 			if last == MODE_FAN then
-				luup.variable_set( FANMODE_SID, "FanStatus", "On", target )
+				setVar( FANMODE_SID, "FanStatus", "On", target )
 			else
-				luup.variable_set( FANMODE_SID, "FanStatus", "Unknown", target )
+				setVar( FANMODE_SID, "FanStatus", "Unknown", target )
 			end
 		else
 			L("Invalid ONOFF state from device %1 in %2", args[2], segs)
@@ -818,7 +867,7 @@ local function handleCHN( unit, segs, pdev, target )
 			return
 		end
 		-- Store this for use by others, just to have available
-		luup.variable_set( DEVICESID, "IntesisMODE", args[2], target )
+		setVar( DEVICESID, "IntesisMODE", args[2], target )
 
 		--[[ Now map the Intesis mode into what the service allows. We track this into two
 			 variables: the usual ModeStatus for the service, and our own LastMode. In the
@@ -839,19 +888,19 @@ local function handleCHN( unit, segs, pdev, target )
 			L("*** UNEXPECTED MODE '%1' RETURNED FROM WMP GATEWAY, IGNORED", args[2])
 			return
 		end
-		luup.variable_set( DEVICESID, "LastMode", newMode, target )
-		local currMode = luup.variable_get( OPMODE_SID, "ModeStatus", target ) or MODE_OFF
+		setVar( DEVICESID, "LastMode", newMode, target )
+		local currMode = getVar( "ModeStatus", MODE_OFF, target, OPMODE_SID )
 		if currMode ~= MODE_OFF then
-			luup.variable_set( OPMODE_SID, "ModeTarget", newMode, target )
-			luup.variable_set( OPMODE_SID, "ModeStatus", newMode, target )
+			setVar( OPMODE_SID, "ModeTarget", newMode, target )
+			setVar( OPMODE_SID, "ModeStatus", newMode, target )
 			if newMode == MODE_FAN or newMode == MODE_DRY then
 				-- With Intesis in FAN and DRY mode, we know fan is running (speed is a separate matter)
-				luup.variable_set( FANMODE_SID, "Mode", FANMODE_ON, target )
-				luup.variable_set( FANMODE_SID, "FanStatus", "On", target )
+				setVar( FANMODE_SID, "Mode", FANMODE_ON, target )
+				setVar( FANMODE_SID, "FanStatus", "On", target )
 			else
 				-- In any other mode, fan is effectively auto and we don't know its state.
-				luup.variable_set( FANMODE_SID, "Mode", FANMODE_AUTO, target )
-				luup.variable_set( FANMODE_SID, "FanStatus", "Unknown", target )
+				setVar( FANMODE_SID, "Mode", FANMODE_AUTO, target )
+				setVar( FANMODE_SID, "FanStatus", "Unknown", target )
 			end
 		end
 	elseif args[1] == "SETPTEMP" then
@@ -865,7 +914,7 @@ local function handleCHN( unit, segs, pdev, target )
 				ptemp = CtoF( ptemp )
 			end
 			D("handleCHN() received SETPTEMP %1, setpoint now %2", args[2], ptemp)
-			luup.variable_set( SETPOINT_SID, "CurrentSetpoint", string.format( "%.0f", ptemp ), target )
+			setVar( SETPOINT_SID, "CurrentSetpoint", string.format( "%.0f", ptemp ), target )
 		else
 			D("handleCHN() received SETPTEMP %1, ignored", args[2], ptemp)
 		end
@@ -877,29 +926,29 @@ local function handleCHN( unit, segs, pdev, target )
 		end
 		local dtemp = string.format( "%2.1f", ptemp )
 		D("handleCHN() received AMBTEMP %1, current temp %2", args[2], dtemp)
-		luup.variable_set( TEMPSENS_SID, "CurrentTemperature", dtemp, target )
-		luup.variable_set( DEVICESID, "DisplayTemperature", dtemp, target )
+		setVar( TEMPSENS_SID, "CurrentTemperature", dtemp, target )
+		setVar( DEVICESID, "DisplayTemperature", dtemp, target )
 	elseif args[1] == "FANSP" then
 		-- Fan speed also doesn't have a 1-1 mapping with the service. Just track it.
-		luup.variable_set( DEVICESID, "IntesisFANSP", args[2] or "", target )
+		setVar( DEVICESID, "IntesisFANSP", args[2] or "", target )
 	elseif args[1] == "VANEUD" then
 		-- There's no analog in the service for vane position, so just store the data
 		-- in case others want to use it.
-		luup.variable_set( DEVICESID, "IntesisVANEUD", args[2] or "", target )
+		setVar( DEVICESID, "IntesisVANEUD", args[2] or "", target )
 	elseif args[1] == "VANELR" then
 		-- There's no analog in the service for vane position, so just store the data
 		-- in case others want to use it.
-		luup.variable_set( DEVICESID, "IntesisVANELR", args[2] or "", target )
+		setVar( DEVICESID, "IntesisVANELR", args[2] or "", target )
 	elseif args[1] == "ERRSTATUS" then
 		-- Should be OK or ERR. Track.
-		luup.variable_set( DEVICESID, "IntesisERRSTATUS", args[2] or "", target )
+		setVar( DEVICESID, "IntesisERRSTATUS", args[2] or "", target )
 	elseif args[1] == "ERRCODE" then
 		-- Values are dependent on the connected device. Track.
-		l = luup.variable_get( DEVICESID, "IntesisERRCODE", target )
+		l = getVar( "IntesisERRCODE", "", target, DEVICESID )
 		l = split( l or "" ) or {}
 		table.insert( l, tostring(args[2]):gsub(",","%2C") )
 		while #l > 10 do table.remove( l, 1 ) end
-		luup.variable_set( DEVICESID, "IntesisERRCODE", table.concat( l, "," ), target )
+		setVar( DEVICESID, "IntesisERRCODE", table.concat( l, "," ), target )
 	else
 		D("handleCHN() unhandled function %1 in %2", args[1], segs)
 	end
@@ -907,13 +956,13 @@ end
 
 -- Handle LIMITS
 function handleLIMITS( unit, segs, pdev, target )
-	D("handleLIMITS(%1,%2,%3)", unit, segs, pdev, target)
+	D("handleLIMITS(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	if #segs >= 2 then
 		local _,_,obj,lim = string.find( segs[2], "([^,]+),%[(.*)%]" )
 		if obj then
 			devData[target].limits[obj] = { values=split( lim ) or {} }
-			luup.variable_set( DEVICESID, "Limits" .. obj, lim, target )
+			setVar( MYSID, "Limits" .. obj, lim, pdev )
 			local mmin, mmax
 			for _,v in ipairs(devData[target].limits[obj].values) do
 				local vn = tonumber(v)
@@ -930,11 +979,11 @@ function handleLIMITS( unit, segs, pdev, target )
 			-- For mode, we may need to enable or disable certain UI buttons
 			local mm = { COOL=0, HEAT=0, AUTO=0, FAN=0, DRY=0 }
 			for _,v in ipairs( devData[target].limits[obj].values ) do
-				luup.variable_set( DEVICESID, "Mode"..v, 1, target )
+				setVar( MYSID, "Mode"..v, 1, pdev )
 				mm[v] = nil
 			end
 			for k in pairs(mm) do
-				luup.variable_set( DEVICESID, "Mode"..k, 0, target )
+				setVar( MYSID, "Mode"..k, 0, pdev )
 			end
 		elseif obj == "SETPTEMP" then
 			local r = devData[target].limits[obj].range or {}
@@ -951,7 +1000,7 @@ end
 
 -- Handle ACK
 function handleACK( unit, segs, pdev, target )
-	D("handleACK(%1,%2,%3)", unit, segs, pdev, target)
+	D("handleACK(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	-- We've been heard; do nothing
 	D("handMessage() ACK received, last command was %1", lastCommand)
@@ -978,7 +1027,7 @@ function handlePONG( unit, segs, pdev, target )
 	D("handlePONG(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	-- response to PING, returns signal strength
-	luup.variable_set( MYSID, "SignalDB", segs[2] or "", pdev )
+	setVar( MYSID, "SignalDB", segs[2] or "", pdev )
 end
 
 local ResponseDispatch = {
@@ -1077,21 +1126,51 @@ local function deviceReceive( dev )
 	return count > 0
 end
 
+local lastDelay = 1
+
+deviceReceiveTask = function( task, dev )
+	if deviceReceive( dev ) then
+		-- Data received; reshorten turnaround
+		lastDelay = 1
+	else
+		-- No data received; slowly extend delay
+		lastDelay = math.min( lastDelay*2, 16 )
+	end
+	task:delay( usingProxy and 120 or lastDelay )
+end
+
 -- Update the display status. We don't really bother with this at the moment because the WMP
 -- protocol doesn't tell us the running status of the unit (see comments at top of this file).
 local function updateDeviceStatus( dev )
 	local msg = "&nbsp;"
 	if not isConnected then
-		luup.variable_set( DEVICESID, "DisplayTemperature", "??.?", dev )
+		setVar( DEVICESID, "DisplayTemperature", "??.?", dev )
 		msg = "Comm Fail"
 	else
-		local errst = luup.variable_get( DEVICESID, "IntesisERRSTATUS", dev ) or "OK"
+		local errst = getVar( "IntesisERRSTATUS", "OK", dev, DEVICESID )
 		if errst ~= "OK" then
-			local errc = luup.variable_get( DEVICESID, "IntesisERRCODE", dev ) or ""
+			local errc = getVar( "IntesisERRCODE", "", dev, DEVICESID )
 			msg = string.format( "%s %s", errst, errc )
 		end
 	end
-	luup.variable_set( DEVICESID, "DisplayStatus", msg, dev )
+	setVar( DEVICESID, "DisplayStatus", msg, dev )
+end
+
+local function updateStatus( pdev )
+	D("updateStatus(%1)", pdev)
+	AP(pdev)
+
+	local children = inventoryChildren( pdev )
+	for _,ch in ipairs( children ) do
+		updateDeviceStatus( ch )
+	end
+	if isConnected then
+		setVar( MYSID, "Failure", 0, pdev )
+		gatewayStatus( "Connected " .. ( usingProxy and "via proxy" or "" ), pdev )
+	else
+		setVar( MYSID, "Failure", 1, pdev )
+		gatewayStatus( "Not connected!", pdev )
+	end
 end
 
 -- Handle a discovery response.
@@ -1120,7 +1199,7 @@ local function handleDiscoveryMessage( msg, parentDev )
 	-- See if the device is already listed
 	for k,v in pairs( luup.devices ) do
 		if v.device_type == MYTYPE and v.device_num_parent == 0 then
-			local s = luup.variable_get( MYSID, "IntesisID", k ) or ""
+			local s = getVar( "IntesisID", "", k, MYSID )
 			s = split( s, "," )
 			if #s >= 2 and parts[2] == s[2] then
 				D("handleDiscoveryMessage() discovery response from %1 (%2), already have it as #%3", parts[2], parts[3], k)
@@ -1175,72 +1254,59 @@ function masterTick( task, dev )
 	AP(dev)
 	local now = os.time()
 
-	-- See if we received any data.
-	lastDelay = lastDelay or 1
 	if not isConnected then
 		D("masterTick() peer is not connected, trying to reconnect...")
-		if sendCommand("ID", dev) then
-			nextDelay = 1
-		else
+		if not sendCommand("ID", dev) then
 			D("masterTick() can't connect peer, waiting...")
-			nextDelay = 60 -- wait a good while before trying again.
-			updateDeviceStatus( dev )
+			task:delay( 60 )
 		end
-	elseif deviceReceive( dev ) then
-		nextDelay = 1 -- if we got data, turn around fast to get more, if we can.
-	else
-		-- No data received, idle stuff
+	end
+	updateStatus( dev )
 
-		-- No data received. By default, next delay is 2 x previous delay, max 64
-		nextDelay = math.min( 64, lastDelay * 2 )
-
+	-- Now connected?
+	if isConnected then
 		-- If it's been more than two refresh intervals or three pings since we
-		-- received some data, we may be in trouble... These tests are in order of priority
-		-- from highest to lowest (ping is the least important).
-		if ( (now - lastIncoming) >= math.min( 2 * intRefresh, 3 * intPing ) ) then
-			L("Device receive timeout; marking disconnected!")
+		-- received some data, we may be in trouble...
+		local tm = lastIncoming + math.min( 2 * intRefresh, 3 * intPing )
+		if now >= tm then
+			L("Gateway receive timeout; marking disconnected!")
 			pcall( closeSocket, dev )
-			updateDeviceStatus( dev )
-			nextDelay = 1
-		elseif #infocmd > 0 then
+			updateStatus( dev )
+			task:delay( 1 ) -- reschedule to try to re-open quickly
+		else 
+			task:schedule( tm )
+		end
+
+		-- See if we're due for any child refreshes
+		local children = inventoryChildren( dev )
+		for _,cn in ipairs( children ) do
+			if now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
+				local unit = luup.devices[cn].id
+				table.insert( infocmd, "GET," .. unit .. ":*" )
+				devData[cn].lastRefresh = now
+			end
+		end
+
+		-- Send queued commands
+		if #infocmd == 0 and now >= ( lastSendTime + intPing ) then
+			table.insert( infocmd, "PING" )
+		end
+		if #infocmd > 0 then
 			local cmd = table.remove( infocmd, 1 )
 			D("masterTick() sending queued/idle command %1", cmd)
 			sendCommand( cmd, dev )
-			nextDelay = 1
-		elseif getVarNumeric( "SendDateTime", 1, dev, DEVICESID ) ~= 0 and
-				lastdtm == nil or ( lastdtm + 3600 ) <= now then
+			if #infocmd > 0 then
+				-- More queued stuff to send, be quick
+				task:delay( 5 )
+			end
+		elseif getVarNumeric( "SendDateTime", 1, dev, MYSID ) ~= 0 and
+				now >= ( ( lastdtm or 0 ) + 3600 ) then
+			-- Update clock. We don't use queue for this so not delayed by other cmds
+			D("masterTick() updating device clock")
 			sendCommand(string.format("CFG:DATETIME,%s", os.date("%d/%m/%Y %H:%M:%S")), dev)
 			lastdtm = now
-			nextDelay = 1
-		elseif lastSendTime + intPing <= now then
-			-- Lowest priority, when there's nothing else to do...
-			sendCommand("PING", dev)
-			nextDelay = 1
 		end
 	end
-
-	-- See if we're due for any child refreshes
-	local children = inventoryChildren( dev )
-	for _,cn in ipairs( children ) do
-		if now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
-			local unit = luup.devices[cn].id
-			table.insert( infocmd, "GET," .. unit .. ":*" )
-			devData[cn].lastRefresh = now
-			nextDelay = 1
-		end
-	end
-
-	-- OK?
-	if isConnected then
-		luup.variable_set( DEVICESID, "Failure", 0, dev )
-	else
-		luup.variable_set( DEVICESID, "Failure", 1, dev )
-	end
-
-	-- Arm for another query.
-	assert( nextDelay > 0 )
-	D("masterTick() arming for next tick in %1", nextDelay)
-	task:delay( nextDelay )
 end
 
 -- Do a one-time startup on a new device
@@ -1250,64 +1316,55 @@ local function deviceRunOnce( dev, parentDev )
 	if rev == 0 then
 		-- Initialize for new installation
 		D("runOnce() Performing first-time initialization!")
-		luup.variable_set(DEVICESID, "Unit", "-1", dev )
-		luup.variable_set(DEVICESID, "Name", "", dev)
-		luup.variable_set(DEVICESID, "DisplayTemperature", "--.-", dev)
-		luup.variable_set(DEVICESID, "DisplayStatus", "Configuring", dev)
-		luup.variable_set(DEVICESID, "Failure", 0, dev )
-		-- Don't mess with IntesisID
-		luup.variable_set(DEVICESID, "IntesisONOFF", "", dev)
-		luup.variable_set(DEVICESID, "IntesisMODE", "", dev)
-		luup.variable_set(DEVICESID, "IntesisFANSP", "", dev)
-		luup.variable_set(DEVICESID, "IntesisVANEUD", "", dev)
-		luup.variable_set(DEVICESID, "IntesisVANELR", "", dev)
-		luup.variable_set(DEVICESID, "IntesisERRSTATUS", "", dev)
-		luup.variable_set(DEVICESID, "IntesisERRCODE", "", dev)
-
-		luup.variable_set(OPMODE_SID, "ModeTarget", MODE_OFF, dev)
-		luup.variable_set(OPMODE_SID, "ModeStatus", MODE_OFF, dev)
-		luup.variable_set(OPMODE_SID, "EnergyModeTarget", EMODE_NORMAL, dev)
-		luup.variable_set(OPMODE_SID, "EnergyModeStatus", EMODE_NORMAL, dev)
-		luup.variable_set(OPMODE_SID, "AutoMode", "1", dev)
-
-		luup.variable_set(FANMODE_SID, "Mode", FANMODE_AUTO, dev)
-		luup.variable_set(FANMODE_SID, "FanStatus", "Off", dev)
-
-		-- Setpoint defaults. Note that we don't have sysTemps yet during this call.
-		-- luup.variable_set(SETPOINT_SID, "Application", "DualHeatingCooling", dev)
-		luup.variable_set(SETPOINT_SID, "SetpointAchieved", "0", dev)
-		if luup.attr_get("TemperatureFormat",0) == "C" then
-			luup.variable_set(SETPOINT_SID, "CurrentSetpoint", "18", dev)
-		else
-			luup.variable_set(SETPOINT_SID, "CurrentSetpoint", "64", dev)
-		end
-
-		luup.variable_set(HADEVICE_SID, "ModeSetting", "1:;2:;3:;4:", dev)
-
-		-- Delete outdated
-		luup.variable_set(DEVICESID, "IntesisID", nil, dev)
-		luup.variable_set(DEVICESID, "IPAddress", nil, dev)
-		luup.variable_set(DEVICESID, "TCPPort", nil, dev)
-		luup.variable_set(DEVICESID, "SignalDB", nil, dev)
-		luup.variable_set(DEVICESID, "ConfigurationUnits", nil, dev)
-
-		luup.variable_set(DEVICESID, "Version", _CONFIGVERSION, dev)
-		return
+		luup.attr_set( "category_num", 5, dev )
+		luup.attr_set( "subcategory_num", 1, dev )
 	end
 
-	if rev < 020200 then
-		L("Updating configuration for rev 020200")
-		luup.variable_set(DEVICESID, "IPAddress", "", dev )
-		luup.variable_set(DEVICESID, "TCPPort", "", dev )
+	initVar(DEVICESID, "Unit", "-1", dev )
+	initVar(DEVICESID, "Name", "", dev)
+	initVar(DEVICESID, "DisplayTemperature", "--.-", dev)
+	initVar(DEVICESID, "DisplayStatus", "Configuring", dev)
+	initVar(DEVICESID, "IntesisONOFF", "", dev)
+	initVar(DEVICESID, "IntesisMODE", "", dev)
+	initVar(DEVICESID, "IntesisFANSP", "", dev)
+	initVar(DEVICESID, "IntesisVANEUD", "", dev)
+	initVar(DEVICESID, "IntesisVANELR", "", dev)
+	initVar(DEVICESID, "IntesisERRSTATUS", "", dev)
+	initVar(DEVICESID, "IntesisERRCODE", "", dev)
+
+	initVar(OPMODE_SID, "ModeTarget", MODE_OFF, dev)
+	initVar(OPMODE_SID, "ModeStatus", MODE_OFF, dev)
+	initVar(OPMODE_SID, "EnergyModeTarget", EMODE_NORMAL, dev)
+	initVar(OPMODE_SID, "EnergyModeStatus", EMODE_NORMAL, dev)
+	initVar(OPMODE_SID, "AutoMode", "1", dev)
+
+	initVar(FANMODE_SID, "Mode", FANMODE_AUTO, dev)
+	initVar(FANMODE_SID, "FanStatus", "Off", dev)
+
+	-- Setpoint defaults. Note that we don't have sysTemps yet during this call.
+	-- setVar(SETPOINT_SID, "Application", "DualHeatingCooling", dev)
+	initVar(SETPOINT_SID, "SetpointAchieved", "0", dev)
+	if luup.attr_get("TemperatureFormat",0) == "C" then
+		initVar(SETPOINT_SID, "CurrentSetpoint", "18", dev)
+	else
+		initVar(SETPOINT_SID, "CurrentSetpoint", "64", dev)
 	end
-	if rev < 020202 then
-		-- More trouble than it's worth
-		luup.variable_set(HADEVICE_SID, "Commands", nil, dev)
-	end
+
+	initVar(HADEVICE_SID, "ModeSetting", "1:;2:;3:;4:", dev)
+
+	-- Delete outdated
+	deleteVar(DEVICESID, "IntesisID", dev)
+	deleteVar(DEVICESID, "IPAddress", dev)
+	deleteVar(DEVICESID, "TCPPort", dev)
+	deleteVar(DEVICESID, "SignalDB", dev)
+	deleteVar(DEVICESID, "ConfigurationUnits", dev)
+	deleteVar(DEVICESID, "Failure", dev)
+	deleteVar(DEVICESID, "Parent", dev)
+	deleteVar(HADEVICE_SID, "Commands", dev)
 
 	-- No matter what happens above, if our versions don't match, force that here/now.
-	if (rev ~= _CONFIGVERSION) then
-		luup.variable_set(DEVICESID, "Version", _CONFIGVERSION, dev)
+	if rev < _CONFIGVERSION then
+		setVar(DEVICESID, "Version", _CONFIGVERSION, dev)
 	end
 end
 
@@ -1330,7 +1387,7 @@ local function deviceStart( dev, parentDev )
 			D("deviceStart() ALTUI's RegisterPlugin action returned resultCode=%1, resultString=%2, job=%3, returnArguments=%4", rc,rs,jj,ra)
 	end
 
-	luup.variable_set( DEVICESID, "DisplayStatus", "", dev )
+	setVar( DEVICESID, "DisplayStatus", "", dev )
 
 	--[[ Work out the system units, the user's desired display units, and the configuration units.
 		 The user's desire overrides the system configuration. This is an exception provided in
@@ -1339,7 +1396,7 @@ local function deviceStart( dev, parentDev )
 		 the interface configuration to use the target units and reload Luup.
 	--]]
 	local sysUnits = luup.attr_get("TemperatureFormat", 0) or "C"
-	local forceUnits = luup.variable_get( DEVICESID, "ForceUnits", dev ) or ""
+	local forceUnits = getVar( "ForceUnits", "", dev, DEVICESID )
 	local targetUnits = ( forceUnits == "" ) and sysUnits or forceUnits
 	D("deviceStart() system units %1, force units %2, target units %3.", sysUnits, forceUnits, targetUnits)
 	local tempStatic = "D_IntesisWMPDevice1_" .. targetUnits .. ".json"
@@ -1505,8 +1562,7 @@ local function plugin_checkVersion(dev)
 	D("checkVersion() branch %1 major %2 minor %3, string %4, openLuup %5", luup.version_branch, luup.version_major, luup.version_minor, luup.version, isOpenLuup)
 	if isOpenLuup then return false end -- v2 does not work on openLuup
 	if ( luup.version_branch == 1 and luup.version_major >= 7 ) then
-		local v = luup.variable_get( MYSID, "UI7Check", dev )
-		if v == nil then luup.variable_set( MYSID, "UI7Check", "true", dev ) end
+		setVar( MYSID, "UI7Check", "true", dev )
 		return true
 	end
 	return false
@@ -1514,34 +1570,35 @@ end
 
 -- Do one-time initialization for a gateway
 local function plugin_runOnce(dev)
-	assert(dev ~= nil)
-	assert(luup.devices[dev].device_num_parent == 0, "plugin_runOnce should only run on parent device")
+	AP(dev)
 
 	local rev = getVarNumeric("Version", 0, dev, MYSID)
 	if rev == 0 then
 		-- Initialize for new installation
 		D("runOnce() Performing first-time initialization!")
-		luup.variable_set(MYSID, "DisplayStatus", "Configuring", dev)
-		luup.variable_set(MYSID, "IntesisID", "", dev )
-		luup.variable_set(MYSID, "IPAddress", "", dev )
-		luup.variable_set(MYSID, "TCPPort", "", dev )
-		luup.variable_set(MYSID, "SignalDB", "", dev)
-		luup.variable_set(MYSID, "PingInterval", "", dev)
-		luup.variable_set(MYSID, "RefreshInterval", "", dev)
-		luup.variable_set(MYSID, "RunStartupDiscovery", 1, dev)
-		luup.variable_set(MYSID, "DebugMode", 0, dev)
-		luup.variable_set(MYSID, "UseProxy", "", dev)
-		luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
-		return true -- tell caller to keep going
+		luup.attr_set( "category_num", 1, dev )
 	end
 
+	initVar(MYSID, "DisplayStatus", "Configuring", dev)
+	initVar(MYSID, "IntesisID", "", dev )
+	initVar(MYSID, "IPAddress", "", dev )
+	initVar(MYSID, "TCPPort", "", dev )
+	initVar(MYSID, "UseProxy", "", dev)
+	initVar(MYSID, "SignalDB", "", dev)
+	initVar(MYSID, "PingInterval", "", dev)
+	initVar(MYSID, "RefreshInterval", "", dev)
+	initVar(MYSID, "RunStartupDiscovery", "", dev)
+	initVar(MYSID, "Failure", "0", dev)
+	initVar(MYSID, "DisplayStatus", "", dev)
+	initVar(MYSID, "DebugMode", 0, dev)
+
 	if rev < 020203 then
-		luup.variable_set(MYSID, "DebugMode", 0, dev)
+		setVar(MYSID, "DebugMode", 0, dev)
 	end
 
 	-- No matter what happens above, if our versions don't match, force that here/now.
 	if rev < _CONFIGVERSION then
-		luup.variable_set(MYSID, "Version", _CONFIGVERSION, dev)
+		setVar(MYSID, "Version", _CONFIGVERSION, dev)
 	end
 	return true -- indicate to caller we should keep going
 end
@@ -1555,6 +1612,9 @@ function plugin_init(dev)
 	pluginDevice = dev
 	devData[dev] = {}
 	devData[dev].units = {}
+	devData[dev].limits = {}
+	devData[dev].sysTemps = {}
+
 	math.randomseed( os.time() )
 
 	if getVarNumeric("DebugMode", 0, dev, MYSID) ~= 0 then
@@ -1576,7 +1636,7 @@ function plugin_init(dev)
 	-- Make sure we're in the right environment
 	if not plugin_checkVersion(dev) then
 		L("This plugin does not run on this firmware!")
-		luup.variable_set( MYSID, "Failure", "1", dev )
+		setVar( MYSID, "Failure", "1", dev )
 		luup.set_failure( 1, dev )
 		return false, "Unsupported system firmware", _PLUGIN_NAME
 	end
@@ -1601,29 +1661,28 @@ function plugin_init(dev)
 				-- Found child.
 				D("plugin_init() checking child %1 (#%2)", v.description, k)
 				-- Is this an old child in need of adoption by a newly-created master?
-				local s = luup.variable_get( DEVICESID, "newmaster", k ) or ""
+				local s = getVar( "newmaster", "", k, DEVICESID )
 				if s ~= "" then
 					-- A new master was created for this child. Adopt.
 					local newdev = tonumber(s)
 					L("Adopting upgraded device %1 for %2", k, newdev)
 					if newdev and (luup.devices[newdev] or {}).device_type == MYTYPE then
 						luup.attr_set( "device_num_parent", newdev, k )
-						luup.variable_set( DEVICESID, "newmaster", nil, k )
+						deleteVar( DEVICESID, "newmaster", k )
 						luup.attr_set( "altid", "1", k )
 						needsReload = true
 					else
-						luup.variable_set( DEVICESID, "DisplayMessage", "Upgrading...", k )
+						setVar( DEVICESID, "DisplayStatus", "Upgrading...", k )
 					end
 				end
-				s = luup.variable_get( DEVICESID, "IntesisID", k ) or ""
+				s = getVar( "IntesisID", "", k, DEVICESID )
 				if s ~= "" then
 					-- Pre-3.0 child has not been handled yet. Parent already have a child?
-					if ( luup.variable_get( MYSID, "IntesisID", dev ) or "" ) == "" then
+					if getVar( "IntesisID", "", dev, DEVICESID ) == "" then
 						-- No gateway ID assigned to this parent yet. Move it.
 						D("plugin_init() assigning child's IntesisID to parent")
-						luup.variable_set( MYSID, "IntesisID", s, dev )
-						luup.variable_set( MYSID, "IPAddress",
-							(luup.variable_get( DEVICESID, "IPAddress", k ) or ""), dev )
+						setVar( MYSID, "IntesisID", s, dev )
+						setVar( MYSID, "IPAddress", getVar( "IPAddress", "", k, DEVICESID ), dev )
 						luup.attr_set( "altid", 1, k )
 					else 
 						-- There's already an ID/IP assigned on this parent.
@@ -1644,18 +1703,15 @@ function plugin_init(dev)
 						local newdev = tonumber( rd.DeviceNum )
 						D("plugin_init() new master is %1", newdev)
 						if newdev then
-							luup.variable_set( DEVICESID, "newmaster", newdev, k ) -- flag conversion
-							luup.variable_set( MYSID, "IntesisID", s, newdev )
-							luup.variable_set( MYSID, "IPAddress", 
-								( luup.variable_get( DEVICESID, "IPAddress", k ) or "" ), newdev )
+							setVar( DEVICESID, "newmaster", newdev, k ) -- flag conversion
+							setVar( MYSID, "IntesisID", s, newdev )
+							setVar( MYSID, "IPAddress", getVar( "IPAddress", "", k, DEVICESID ), newdev )
 							needsReload = true
 						end
 					end
 					D("plugin_init() clearing child %1 identity data", k)
-					luup.variable_set( DEVICESID, "IntesisID", "", k )
-					luup.variable_set( DEVICESID, "IntesisID", nil, k )
-					luup.variable_set( DEVICESID, "IPAddress", "", k )
-					luup.variable_set( DEVICESID, "IPAddress", nil, k )
+					deleteVar( DEVICESID, "IntesisID", k )
+					deleteVar( DEVICESID, "IPAddress", k )
 				else
 					D("plugin_init() child %1 (#%2) is already converted", 
 						v.description, k)
@@ -1671,7 +1727,7 @@ function plugin_init(dev)
 
 	-- The device IP can change at any time, so always use the last discovery
 	-- response. Make an effort here. It's not always easy.
-	local ident = luup.variable_get( MYSID, "IntesisID", dev ) or ""
+	local ident = getVar( "IntesisID", "", dev, MYSID )
 	if ident ~= "" then
 		D("plugin_init() last known ident is %1", ident)
 		local parts = split( ident, "," )
@@ -1683,7 +1739,7 @@ function plugin_init(dev)
 			return false, "Can't establish IP address from ident string", _PLUGIN_NAME
 		end
 		D("plugin_init() updating device IP to %1", devIP)
-		luup.variable_set( MYSID, "IPAddress", devIP, dev )
+		setVar( MYSID, "IPAddress", devIP, dev )
 	elseif getVarNumeric( "RunStartupDiscovery", 1, dev, MYSID ) ~= 0 then
 		launchDiscovery( dev )
 	else
@@ -1724,19 +1780,19 @@ function plugin_init(dev)
 		local unit = tonumber( luup.devices[cn].id ) or -1
 		if unit < 0 then
 			luup.set_failure( cn, true );
-			luup.variable_set( DEVICESID, "Failure", 1, cn )
-			luup.variable_set( DEVICESID, "DisplayMessage", "Unit number is not assigned", cn )
+			setVar( DEVICESID, "Failure", 1, cn )
+			setVar( DEVICESID, "DisplayStatus", "Unit number is not assigned", cn )
 		elseif devData[dev].units[tostring(unit)] then
 			luup.set_failure( cn, true );
-			luup.variable_set( DEVICESID, "Failure", 1, cn )
-			luup.variable_set( DEVICESID, "DisplayMessage", "Unit number is already assigned", cn )
+			setVar( DEVICESID, "Failure", 1, cn )
+			setVar( DEVICESID, "DisplayStatus", "Duplicate unit ID!", cn )
 		else
-			devData[dev].units[tostring(unit)] = unit
+			devData[dev].units[tostring(unit)] = cn
 			luup.set_failure( cn, false );
-			luup.variable_set( DEVICESID, "Failure", 0, cn ) -- IUPG
+			setVar( DEVICESID, "Failure", 0, cn ) -- IUPG
 			local ok, err = pcall( deviceStart, cn, dev )
 			if not ok then
-				luup.variable_set( DEVICESID, "Failure", 1, cn )
+				setVar( DEVICESID, "Failure", 1, cn )
 				L("Device %1 (%2) failed to start, %3", cn, luup.devices[cn].description, err)
 				gatewayStatus( "Device(s) failed to start!", dev )
 			end
@@ -1774,7 +1830,7 @@ function actionSetModeTarget( dev, newMode )
 		L("Invalid target opreating mode passed in action: %1", newMode)
 		return false
 	end
-	luup.variable_set( OPMODE_SID, "ModeTarget", newMode, dev )
+	setVar( OPMODE_SID, "ModeTarget", newMode, dev )
 	return true
 end
 
@@ -1845,7 +1901,7 @@ function actionSetCurrentSetpoint( dev, newSP )
 	end
 	D("actionSetCurrentSetpoint() new target setpoint is %1C", newSP)
 
-	luup.variable_set( SETPOINT_SID, "SetpointAchieved", "0", dev )
+	setVar( SETPOINT_SID, "SetpointAchieved", "0", dev )
 	if sendCommand("SET," .. unit .. ":SETPTEMP," .. string.format( "%.0f", newSP * 10 ), dev ) then
 		return sendCommand( "GET," .. unit .. ":SETPTEMP", dev ) -- An immediate get to make sure display shows device limits
 	end
@@ -1855,7 +1911,7 @@ end
 -- Action to change energy mode (not implemented).
 function actionSetEnergyModeTarget( dev, newMode )
 	-- Store the target, but don't change status, because nothing changes, and signal failure.
-	luup.variable_set( OPMODE_SID, "EnergyModeTarget", newMode, dev )
+	setVar( OPMODE_SID, "EnergyModeTarget", newMode, dev )
 	return false
 end
 
@@ -2005,7 +2061,7 @@ end
 
 function actionHandleReceive( dev, params )
 	D("actionHandleReceive(%1,%2)", dev, params)
-	deviceReceive( dev )
+	scheduler.getTask( 'receiver' ):delay( 0 )
 end
 
 function actionSetDebug( dev, enabled )
@@ -2124,9 +2180,9 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
 			for lnum,ldev in pairs( luup.devices ) do
 				if ldev.device_type == DEVICETYPE then
 					local issinfo = {}
-					table.insert( issinfo, issKeyVal( "curmode", map( { Off="Off",HeatOn="Heat",CoolOn="Cool",AutoChangeOver="Auto",Dry="Dry",FanOnly="Fan" }, luup.variable_get( OPMODE_SID, "ModeStatus", lnum ), "Off" ) ) )
-					table.insert( issinfo, issKeyVal( "curfanmode", map( { Auto="Auto",ContinuousOn="On",PeriodicOn="Periodic" }, luup.variable_get(FANMODE_SID, "Mode", lnum), "Auto" ) ) )
-					table.insert( issinfo, issKeyVal( "curtemp", luup.variable_get( TEMPSENS_SID, "CurrentTemperature", lnum ), { unit="°" .. devData[lnum].sysTemps.unit } ) )
+					table.insert( issinfo, issKeyVal( "curmode", map( { Off="Off",HeatOn="Heat",CoolOn="Cool",AutoChangeOver="Auto",Dry="Dry",FanOnly="Fan" }, getVar( "ModeStatus","Off", lnum, OPMODE_SID ) ) ) )
+					table.insert( issinfo, issKeyVal( "curfanmode", map( { Auto="Auto",ContinuousOn="On",PeriodicOn="Periodic" }, getVar( "Mode", "Auto", lnum, FANMODE_SID) ) ) )
+					table.insert( issinfo, issKeyVal( "curtemp", getVar("CurrentTemperature", "", lnum,  TEMPSENS_SID ), { unit="°" .. devData[lnum].sysTemps.unit } ) )
 					table.insert( issinfo, issKeyVal( "cursetpoint", getVarNumeric( "CurrentSetpoint", devData[lnum].sysTemps.default, lnum, SETPOINT_SID ) ) )
 					table.insert( issinfo, issKeyVal( "step", 0.5 ) )
 					table.insert( issinfo, issKeyVal( "minVal", devData[lnum].sysTemps.minimum ) )

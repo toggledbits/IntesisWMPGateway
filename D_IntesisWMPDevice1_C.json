@@ -1,14 +1,6 @@
 {
 	"default_icon": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
 	"state_icons": [{
-			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_off.png",
-			"conditions": [{
-				"service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
-				"variable": "Failure",
-				"operator": "==",
-				"value": 1
-			}]
-		}, {
 			"img": "https://www.toggledbits.com/assets/intesis/wmp_mode_heat.png",
 			"conditions": [{
 				"service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
