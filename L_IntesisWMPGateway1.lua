@@ -54,7 +54,7 @@ local socket = require("socket")
 local _PLUGIN_NAME = "IntesisWMPGateway"
 local _PLUGIN_VERSION = "3.0develop-20232"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
-local _CONFIGVERSION = 020203
+local _CONFIGVERSION = 20204
 
 local debugMode = true
 -- local traceMode = false
@@ -237,7 +237,7 @@ end
 local function getVar( name, dflt, dev, sid )
 	A( name ~= nil and dev ~= nil and sid ~= nil )
 	local s,t = luup.variable_get( sid, name, dev )
-	if debugMode and s == nil then T({level=2,msg="Undefined state variable %1/%2 on #%3"}, sid or RSSID, name, dev) end
+	if debugMode and s == nil then T({level=2,msg="getVar() of ndefined state variable %1/%2 on #%3"}, sid, name, dev) end
 	if s == nil or s == "" then return dflt,0 end
 	return s,t
 end
@@ -1280,7 +1280,9 @@ function masterTick( task, dev )
 		-- See if we're due for any child refreshes
 		local children = inventoryChildren( dev )
 		for _,cn in ipairs( children ) do
-			if now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
+			if not devData[cn] then
+				D("masterTick() child %1 may not be started yet", cn)
+			elseif now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
 				local unit = luup.devices[cn].id
 				table.insert( infocmd, "GET," .. unit .. ":*" )
 				devData[cn].lastRefresh = now
@@ -1356,10 +1358,17 @@ local function deviceRunOnce( dev, parentDev )
 	deleteVar(DEVICESID, "IntesisID", dev)
 	deleteVar(DEVICESID, "IPAddress", dev)
 	deleteVar(DEVICESID, "TCPPort", dev)
+	deleteVar(DEVICESID, "Name", dev)
 	deleteVar(DEVICESID, "SignalDB", dev)
 	deleteVar(DEVICESID, "ConfigurationUnits", dev)
 	deleteVar(DEVICESID, "Failure", dev)
 	deleteVar(DEVICESID, "Parent", dev)
+	for _,v in ipairs{ "ONOFF", "MODE", "FANSP", "VANEUD", "VANELR", "SETPTEMP" } do
+		deleteVar(DEVICESID, "Limits"..v, dev)
+	end
+	for _,v in ipairs{ "AUTO", "HEAT", "COOL", "DRY", "FAN" } do
+		deleteVar(DEVICESID, "Mode"..v, dev)
+	end
 	deleteVar(HADEVICE_SID, "Commands", dev)
 
 	-- No matter what happens above, if our versions don't match, force that here/now.
