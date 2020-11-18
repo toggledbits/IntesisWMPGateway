@@ -1183,7 +1183,10 @@ local function handleDiscoveryMessage( msg, parentDev )
 	local parts = split( msg, "," )
 	parts[1] = parts[1] or ""
 	local model = parts[1]:sub(10)
-	if string.sub( parts[1], 1, 9) ~= "DISCOVER:" then
+	if parts[1]:match( "^DISCOVER[\r\n]" ) then
+		D("handleDiscoveryMessage() ignoring echo of discovery request")
+		return false
+	elseif string.sub( parts[1], 1, 9) ~= "DISCOVER:" then
 		D("handleDiscoveryMessage() can't handle %1 message type", parts[1])
 		return false
 	elseif not string.match( model, "-WMP-" ) or parts[4] ~= "ASCII" then
@@ -1197,10 +1200,12 @@ local function handleDiscoveryMessage( msg, parentDev )
 	gatewayStatus( string.format("Response from %s at %s", tostring(parts[2]), tostring(parts[3])), parentDev )
 
 	-- See if the device is already listed
+	D("handleDiscoveryMessage() searching for existing device matching %1", parts[2])
 	for k,v in pairs( luup.devices ) do
 		if v.device_type == MYTYPE and v.device_num_parent == 0 then
 			local s = getVar( "IntesisID", "", k, MYSID )
 			s = split( s, "," )
+			D("handleDiscoveryMessage() checking #%1 (%2) identified by %3", k, v.description, s[2])
 			if #s >= 2 and parts[2] == s[2] then
 				D("handleDiscoveryMessage() discovery response from %1 (%2), already have it as #%3", parts[2], parts[3], k)
 				gatewayStatus( string.format("%s at %s is already known", parts[2], parts[3]), parentDev )
@@ -1209,26 +1214,39 @@ local function handleDiscoveryMessage( msg, parentDev )
 		end
 	end
 
-	L("Did not find %1, adding...", parts[2], parentDev)
+	if getVar( "IntesisID", "", parentDev, MYSID ) == "" then
+		D("handleDiscoveryMessage() assigning discovered %1 to current master %2",
+			parts[2], parentDev)
+		L("Did not find device for gateway %1, configuring...", parts[2], parentDev)
+		setVar( MYSID, "IntesisID", msg:sub(10), parentDev )
+		setVar( MYSID, "IPAddress", parts[3], parentDev )
+		return true
+	end
+
+	L("Did not find device for gateway %1, creating new gateway device...", parts[2], parentDev)
 	-- Need to create a child device, which can only be done by re-creating all child devices.
 	gatewayStatus( string.format("Adding %s at %s...", tostring(parts[2]), tostring(parts[3])), parentDev )
 
+	local vv = {
+		MYSID .. ",IntesisID=" .. msg:sub(10),
+		MYSID .. ",IPAddress=" .. parts[3]
+	}
 	local ra,rb,rc,rd = luup.call_action(
 		"urn:micasaverde-com:serviceId:HomeAutomationGateway1",
 		"CreateDevice",
 		{
 			Description="IntesisBox "..parts[2],
+			deviceType=MYTYPE,
 			UpnpDevFilename="D_IntesisWMPGateway1.xml",
 			UpnpImplFilename="I_IntesisWMPGateway1.xml",
-			RoomNum=luup.attr_get( "room_num", parentDev ) or 0
+			RoomNum=luup.attr_get( "room_num", parentDev ) or 0,
+			StateVariables=table.concat( vv, "\n" )
 		},
 		0
 	)
 	local newdev = tonumber( rd.DeviceNum )
 	D("handleDiscoveryMessage() new master is %1", newdev)
 	if newdev then
-		luup.attr_set( MYSID, "IntesisID", msg:sub(10), newdev ) -- remove DISCOVER:
-		luup.attr_set( MYSID, "IPAddress", parts[3], newdev )
 		return true
 	end
 	
@@ -1687,7 +1705,8 @@ function plugin_init(dev)
 				s = getVar( "IntesisID", "", k, DEVICESID )
 				if s ~= "" then
 					-- Pre-3.0 child has not been handled yet. Parent already have a child?
-					if getVar( "IntesisID", "", dev, DEVICESID ) == "" then
+--- ??? FIX ME -- if false
+					if false and getVar( "IntesisID", "", dev, DEVICESID ) == "" then
 						-- No gateway ID assigned to this parent yet. Move it.
 						D("plugin_init() assigning child's IntesisID to parent")
 						setVar( MYSID, "IntesisID", s, dev )
@@ -1698,6 +1717,11 @@ function plugin_init(dev)
 						-- Make a new master device for this ID/IP. The startup for the 
 						-- new master will take care of adding a default child/unit.]
 						D("plugin_init() creating new master for %1", s)
+						local vv = {
+							MYSID .. ",IntesisID=" .. s,
+							MYSID .. ",IPAddress=" .. getVar( "IPAddress", "", k, DEVICESID ),
+							DEVICESID .. ",newmaster=" .. newdev
+						}
 						local ra,rb,rc,rd = luup.call_action(
 							"urn:micasaverde-com:serviceId:HomeAutomationGateway1",
 							"CreateDevice",
@@ -1705,16 +1729,14 @@ function plugin_init(dev)
 								Description="IntesisBox Gateway",
 								UpnpDevFilename="D_IntesisWMPGateway1.xml",
 								UpnpImplFilename="I_IntesisWMPGateway1.xml",
-								RoomNum=luup.attr_get( "room_num", k ) or 0
+								RoomNum=luup.attr_get( "room_num", k ) or 0,
+								StateVariables=table.concat( vv, "\n" )
 							},
 							0
 						)
 						local newdev = tonumber( rd.DeviceNum )
 						D("plugin_init() new master is %1", newdev)
 						if newdev then
-							setVar( DEVICESID, "newmaster", newdev, k ) -- flag conversion
-							setVar( MYSID, "IntesisID", s, newdev )
-							setVar( MYSID, "IPAddress", getVar( "IPAddress", "", k, DEVICESID ), newdev )
 							needsReload = true
 						end
 					end
@@ -1744,18 +1766,15 @@ function plugin_init(dev)
 		if devIP == "" then
 			L("Device IP could not be established for %1(%2) ID=%3",
 				dev, luup.devices[dev].description, ident)
-			luup.set_failure( 1, dev )
 			return false, "Can't establish IP address from ident string", _PLUGIN_NAME
 		end
 		D("plugin_init() updating device IP to %1", devIP)
 		setVar( MYSID, "IPAddress", devIP, dev )
-	elseif getVarNumeric( "RunStartupDiscovery", 1, dev, MYSID ) ~= 0 then
-		launchDiscovery( dev )
 	else
 		L("Device IP could not be established for %1(%2) ID=%3",
 			dev, luup.devices[dev].description, ident)
-		luup.set_failure( 1, dev )
-		return false, "Please run discovery.", _PLUGIN_NAME
+		luup.set_failure( 0, dev )
+		return true, "Please run discovery.", _PLUGIN_NAME
 	end
 	luup.attr_set( "ip", "", dev )
 	luup.attr_set( "mac", "", dev )
