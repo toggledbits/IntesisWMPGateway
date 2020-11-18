@@ -652,7 +652,7 @@
 					"left": "0",
 					"Label": {
 						"lang_tag": "wmp_setunit_sep",
-						"text": "<hr/>If you control multiple units, you can set the unit number for this device here. See your IntesisBox documentation for more information before changing this value."
+						"text": "<hr/>If you control multiple units, you can set the unit number that this device controls. See your IntesisBox documentation for more information before changing this value."
 					},
 					"Display": {
 						"Top": 190,

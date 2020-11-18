@@ -252,6 +252,11 @@ local function getVarNumeric( name, dflt, dev, sid )
 	return type(s)=="number" and s or tonumber(s) or dflt
 end
 
+local function getVarBool( name, dflt, dev, sid )
+	A(type(dflt)=="boolean")
+	return 0 ~= getVarNumeric( name, dflt and 1 or 0, dev, sid )
+end
+
 -- Convert F to C
 local function FtoC( temp )
 	temp = tonumber(temp)
@@ -676,12 +681,13 @@ local function configureSocket( sock, dev )
 	masterSocket = sock
 	isConnected = true
 	inBuffer = nil
-	infocmd = { "INFO", "LIMITS:*" }
+	infocmd = { "ID", "LIMITS:*", "STATUS,1:" }
 	lastdtm = 0
 	nextRefreshUnit = 0
 	lastSendTime = os.time()
 	lastIncoming = os.time()
 	lastCommand = ""
+	canCmdSTATUS = false
 	intPing = getVarNumeric( "PingInterval", usingProxy and 90 or DEFAULT_PING, dev, DEVICESID )
 	if intPing > 100 then intPing = 100 end -- gateway disconnects after two minutes, so limit
 	intRefresh = getVarNumeric( "RefreshInterval", usingProxy and 300 or DEFAULT_REFRESH, dev, DEVICESID )
@@ -698,7 +704,7 @@ local function _conn( dev, ip, port )
 		return false, "Can't get socket for connection"
 	end
 	-- Try SockProxy first
-	local tryProxy = getVarNumeric( "UseProxy", 1, pluginDevice, MYSID ) ~= 0
+	local tryProxy = getVarBool( "UseProxy", true, pluginDevice, MYSID ) -- ???
 	if tryProxy then
 		sock:settimeout( 15 )
 		local st,se = sock:connect( "127.0.0.1", 2504 )
@@ -831,7 +837,7 @@ local function handleID( unit, segs, pdev, target )
 	D("handleID(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	local args
-	setVar( MYSID, "IntesisID", segs[2], pdev ) -- aka MAC
+	setVar( MYSID, "IntesisID", segs[2], pdev )
 	args = split( segs[2], "," )
 	setVar( MYSID, "Name", args[7] or "", pdev )
 	setVar( MYSID, "SignalDB", args[6] or "", pdev )
@@ -876,7 +882,7 @@ local function handleCHN( unit, segs, pdev, target )
 		end
 	elseif args[1] == "MODE" then
 		if args[2] == nil then
-			L("Malformed CHN segment %2 function data missing in %3", args[1], segs)
+			W("Malformed segment %1 function data missing in %2", args[1], segs)
 			return
 		end
 		-- Store this for use by others, just to have available
@@ -898,7 +904,7 @@ local function handleCHN( unit, segs, pdev, target )
 		-- Save as LastMode, and conditionally ModeStatus (see comment block above).
 		local newMode = xmap[args[2]]
 		if newMode == nil then
-			L("*** UNEXPECTED MODE '%1' RETURNED FROM WMP GATEWAY, IGNORED", args[2])
+			W("*** UNEXPECTED MODE '%1' RETURNED FROM WMP GATEWAY, IGNORED", args[2])
 			return
 		end
 		setVar( DEVICESID, "LastMode", newMode, target )
@@ -967,6 +973,16 @@ local function handleCHN( unit, segs, pdev, target )
 	end
 end
 
+-- Send: STATUS,1:
+-- Recv: STATUS,1:ONOFF,ON;MODE,AUTO;FANSP,AUTO;VANEUD,AUTO;VANELR,AUTO;SETPTEMP,210;AMBTEMP,220
+local function handleSTATUS( unit, segs, pdev, target )
+	stats = split( segs[2], ";" )
+	for _,stat in ipairs( stats ) do
+		handleCHN( unit, { segs[1], stat }, pdev, target )
+	end
+	canCmdSTATUS = true
+end
+
 -- Handle LIMITS
 --[[ PHR 2020-11-18: As of this writing, we don't know the real semantics of LIMIT
      when multiple units are controlled by the gateway. It seems logical that it
@@ -977,7 +993,7 @@ end
      different temperature units (unlikely, but possible). Maybe Intesis will
      resolve the lingering question/issue here at some point.
 --]]
-function handleLIMITS( unit, segs, pdev, target )
+local function handleLIMITS( unit, segs, pdev, target )
 	D("handleLIMITS(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	if #segs >= 2 then
@@ -1081,6 +1097,7 @@ local ResponseDispatch = {
 	ID=handleID,
 	INFO=handleINFO,
 	CHN=handleCHN,
+	STATUS=handleSTATUS,
 	LIMITS=handleLIMITS,
 	ACK=handleACK,
 	ERR=handleERR,
@@ -1110,6 +1127,7 @@ local function handleMessage( msg, pdev )
 				luup.devices[pdev].description, pdev, resp[2], msg)
 			return
 		end
+		devData[devTarget].lastMessage = os.time()
 	else
 		respUnit = nil
 		devTarget = pdev
@@ -1193,10 +1211,12 @@ local function updateDeviceStatus( dev )
 	if not isConnected then
 		setVar( DEVICESID, "DisplayTemperature", "??.?", dev )
 		msg = "Comm Fail"
+	elseif os.time() >= ( ( devData[dev].lastMessage or 0 ) + 2*intRefresh ) then
+		msg = "Unresponsive"
 	else
 		local errst = getVar( "IntesisERRSTATUS", "OK", dev, DEVICESID )
 		if errst ~= "OK" then
-			local errc = getVar( "IntesisERRCODE", "", dev, DEVICESID )
+			local errc = getVar( "IntesisERRCODE", "?", dev, DEVICESID )
 			msg = string.format( "%s %s", errst, errc )
 		end
 	end
@@ -1318,6 +1338,10 @@ function masterTick( task, dev )
 	AP(dev)
 	local now = os.time()
 
+	-- Up front, schedule the next tick for worst-case. Subsequent scheduling may
+	-- shorten the interval until the next tick.
+	task:delay( 100 ) -- gateways will disconnect/timeout at 120 seconds; leave room
+
 	if not isConnected then
 		D("masterTick() peer is not connected, trying to reconnect...")
 		if not sendCommand("ID", dev) then
@@ -1345,10 +1369,19 @@ function masterTick( task, dev )
 		for cn in iterateChildren( dev ) do
 			if not devData[cn] then
 				D("masterTick() child %1 may not be started yet", cn)
-			elseif now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
-				local unit = luup.devices[cn].id
-				table.insert( infocmd, "GET," .. unit .. ":*" )
-				devData[cn].lastRefresh = now
+			else
+				if now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
+					local unit = luup.devices[cn].id
+					if canCmdSTATUS and getVarBool( "UseSTATUS", true, cn, DEVICESID ) then
+						D("masterTick() queueing unit %1 refresh using STATUS", unit)
+						table.insert( infocmd, "STATUS," .. unit .. ":" )
+					else
+						D("masterTick() queueing unit %1 refresh using GET", unit)
+						table.insert( infocmd, "GET," .. unit .. ":*" )
+					end
+					devData[cn].lastRefresh = now
+				end
+				updateDeviceStatus( cn )
 			end
 		end
 
@@ -1367,7 +1400,7 @@ function masterTick( task, dev )
 				-- More queued stuff to send, be quick
 				task:delay( 5 )
 			end
-		elseif getVarNumeric( "SendDateTime", 1, dev, MYSID ) ~= 0 and
+		elseif getVarBool( "UseDATETIME", true, dev, MYSID ) and
 				now >= ( ( lastdtm or 0 ) + 3600 ) then
 			-- Update clock. We don't use queue for this so not delayed by other cmds
 			D("masterTick() updating device clock")
@@ -1427,15 +1460,11 @@ local function deviceRunOnce( dev, parentDev )
 	deleteVar(DEVICESID, "ConfigurationUnits", dev)
 	deleteVar(DEVICESID, "Failure", dev)
 	deleteVar(DEVICESID, "Parent", dev)
-	for _,v in ipairs{ "ONOFF", "MODE", "FANSP", "VANEUD", "VANELR", "SETPTEMP" } do
-		deleteVar(DEVICESID, "Limits"..v, dev)
-	end
-	for _,v in ipairs{ "AUTO", "HEAT", "COOL", "DRY", "FAN" } do
-		deleteVar(DEVICESID, "Mode"..v, dev)
-	end
 	deleteVar(HADEVICE_SID, "Commands", dev)
 	-- Temporary
 	deleteVar(DEVICESID, "Unit", dev)
+	deleteVar(DEVICESID, "DisplayMessage", dev)
+	deleteVar(DEVICETYPE, "ForceUnits", dev)
 
 	-- No matter what happens above, if our versions don't match, force that here/now.
 	if rev < _CONFIGVERSION then
@@ -1451,6 +1480,7 @@ local function deviceStart( dev, parentDev )
 	devData[dev] = {}
 	devData[dev].limits = {}
 	devData[dev].lastRefresh = 0
+	devData[dev].lastMessage = os.time()
 
 	-- Make sure the device is initialized. It may be new.
 	deviceRunOnce( dev, parentDev )
@@ -1675,7 +1705,8 @@ local function plugin_runOnce(dev)
 	initVar(MYSID, "RefreshInterval", "", dev)
 	initVar(MYSID, "RunStartupDiscovery", "", dev)
 	initVar(MYSID, "Failure", "0", dev)
-	initVar(MYSID, "DisplayStatus", "", dev)
+	initVar(MYSID, "UseSTATUS", "", dev)
+	initVar(MYSID, "UseDATETIME", "", dev)
 	initVar(MYSID, "DebugMode", 0, dev)
 
 	if rev < 020203 then
@@ -1704,7 +1735,7 @@ function plugin_init(dev)
 
 	math.randomseed( os.time() )
 
-	if getVarNumeric("DebugMode", 0, dev, MYSID) ~= 0 then
+	if getVarBool("DebugMode", false, dev, MYSID) then
 		debugMode = true
 		D("plugin_init() debug enabled by state variable")
 	end
@@ -2058,7 +2089,7 @@ end
 
 function actionSetUnitID( dev, unitid )
 	unitid = tostring( unitid )
-	if not unitid:match( "^[1-9][0-9]*$" ) then
+	if not unitid:match( "^[0-9]+$" ) then -- unit 0 is apparently allowed
 		E("Action failed: invalid unit ID %1", unitid)
 		return false
 	end

@@ -8,9 +8,9 @@
 		--
 		-- See http://www.toggledbits.com/intesis/
 		-- -------------------------------------------------------------------------------------------------------------------------
+		IntesisWMPGateway = require("L_IntesisWMPGateway1")
 		function startupWMPGateway(dev)
 			luup.log("IntesisWMPGateway Plugin START-UP!")
-			IntesisWMPGateway = require("L_IntesisWMPGateway1")
 			intesisTaskTick = IntesisWMPGateway.plugin_tick
 			intesisVarChanged = IntesisWMPGateway.varChanged
 			intesisRequestHandler = IntesisWMPGateway.plugin_requestHandler
@@ -19,11 +19,6 @@
 		end
 	</functions>
 	<startup>startupWMPGateway</startup>
-	<incoming>
-		<lua>
-			IntesisWMPGateway.plugin_handleIncoming( lul_device, lul_data )
-	    </lua>
-	</incoming>
 	<actionList>
 		<action>
 			<serviceId>urn:upnp-org:serviceId:HVAC_UserOperatingMode1</serviceId>
