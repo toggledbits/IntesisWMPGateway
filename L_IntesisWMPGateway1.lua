@@ -55,7 +55,7 @@ local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
 local _PLUGIN_VERSION = "3.0develop-20323"
-local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
+local _PLUGIN_URL = "https://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 20204
 
 local debugMode = false
