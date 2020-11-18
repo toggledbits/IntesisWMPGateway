@@ -1625,6 +1625,7 @@ function discoveryTick( task, dev, expiration )
 		L("Discovery: new devices; arming to reload Luup")
 		gatewayStatus( "Configuring new devices; reloading Luup", dev )
 		deferReload( 5, dev )
+		return
 	end
 	L("Discovery ended with no new gateways found.")
 	gatewayStatus( "Nothing new discovered.", dev )
@@ -1741,6 +1742,7 @@ function plugin_init(dev)
 	end
 
 	-- Check for ALTUI and OpenLuup
+	local masterCount = 0
 	for _,v in pairs(luup.devices) do
 		if v.device_type == "urn:schemas-upnp-org:device:altui:1" and v.device_num_parent == 0 then
 			D("init() detected ALTUI")
@@ -1748,6 +1750,8 @@ function plugin_init(dev)
 		elseif v.device_type == "openLuup" then
 			D("init() detected openLuup")
 			isOpenLuup = true
+		elseif v.device_type == MYTYPE then
+			masterCount = masterCount + 1
 		end
 	end
 
@@ -1838,6 +1842,35 @@ function plugin_init(dev)
 		end
 	end
 
+	-- Check children.
+	local children = inventoryChildren( dev )
+	if masterCount == 1 and #children == 0 and getVar( "IntesisID", "", dev, MYSID ) == "" then
+		-- One master (this device), and no children... maybe launch discovery!
+		if getVarBool( "RunStartupDiscovery", true, dev, MYSID ) then
+			L("Launching initial discovery!")
+			launchDiscovery( dev )
+			return true, "Initial discovery running", _PLUGIN_NAME
+		end
+	end
+	if #children == 0 then
+		-- Create first child as unit 1 by default.
+		local vv = {
+			",room_num="..(luup.attr_get("room_num", dev) or "0")
+		}
+		local ptr = luup.chdev.start( dev )
+		luup.chdev.append( dev, ptr,
+			1, -- id (altid)
+			"Unit 1", -- description
+			"", -- device type
+			"D_IntesisWMPDevice1.xml", -- device file
+			"", -- impl file
+			table.concat( vv, "\n" ), -- state vars
+			false -- embedded
+		)
+		luup.chdev.sync( dev, ptr )
+		return false, "Reconfiguring...", _PLUGIN_NAME
+	end
+
 	-- The device IP can change at any time, so always use the last discovery
 	-- response. Make an effort here. It's not always easy.
 	local ident = getVar( "IntesisID", "", dev, MYSID )
@@ -1866,25 +1899,6 @@ function plugin_init(dev)
 	scheduler.Task:new( 'master', dev, masterTick, { dev } ):delay( 15 )
 
 	-- Start up each of our children
-	local children = inventoryChildren( dev )
-	if #children == 0 then
-		-- Create first child as unit 1 by default.
-		local vv = {
-			",room_num="..(luup.attr_get("room_num", dev) or "0")
-		}
-		local ptr = luup.chdev.start( dev )
-		luup.chdev.append( dev, ptr,
-			1, -- id (altid)
-			"Unit 1", -- description
-			"", -- device type
-			"D_IntesisWMPDevice1.xml", -- device file
-			"", -- impl file
-			table.concat( vv, "\n" ), -- state vars
-			false -- embedded
-		)
-		luup.chdev.sync( dev, ptr )
-		return false, "Reconfiguring...", _PLUGIN_NAME
-	end
 	for _,cn in ipairs( children ) do
 		local unit = tonumber( luup.devices[cn].id ) or -1
 		L("Starting %2 (#%1) unit %3", cn, luup.devices[cn].description, unit)
