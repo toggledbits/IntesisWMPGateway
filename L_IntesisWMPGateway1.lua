@@ -1688,37 +1688,26 @@ function plugin_init(dev)
 				-- Found child.
 				D("plugin_init() checking child %1 (#%2)", v.description, k)
 				-- Is this an old child in need of adoption by a newly-created master?
-				local s = getVar( "newmaster", "", k, DEVICESID )
-				if s ~= "" then
-					-- A new master was created for this child. Adopt.
-					local newdev = tonumber(s)
-					L("Adopting upgraded device %1 for %2", k, newdev)
-					if newdev and (luup.devices[newdev] or {}).device_type == MYTYPE then
-						luup.attr_set( "id_parent", newdev, k )
-						deleteVar( DEVICESID, "newmaster", k )
-						luup.attr_set( "altid", "1", k )
-						needsReload = true
-					else
-						setVar( DEVICESID, "DisplayStatus", "Upgrading...", k )
-					end
-				end
-				s = getVar( "IntesisID", "", k, DEVICESID )
+				local s = getVar( "IntesisID", "", k, DEVICESID )
 				if s ~= "" then
 					-- Pre-3.0 child has not been handled yet. Parent already have a child?
 --- ??? FIX ME -- if false
 					if false and getVar( "IntesisID", "", dev, DEVICESID ) == "" then
-						-- No gateway ID assigned to this parent yet. Move it.
+						-- No gateway ID assigned to this parent yet. Move it up from child.
 						D("plugin_init() assigning child's IntesisID to parent")
 						setVar( MYSID, "IntesisID", s, dev )
 						setVar( MYSID, "IPAddress", getVar( "IPAddress", "", k, DEVICESID ), dev )
 						luup.attr_set( "altid", 1, k )
 						deleteVar( DEVICESID, "IntesisID", k )
 						deleteVar( DEVICESID, "IPAddress", k )
+						needsReload = true
 					else 
 						-- There's already an ID/IP assigned on this parent.
 						-- Make a new master device for this ID/IP. The startup for the 
 						-- new master will take care of adding a default child/unit.]
 						D("plugin_init() creating new master for %1", s)
+						local m = split( s, "," )
+						local newname = "IntesisBox " .. (m[2] or "Gateway")
 						local vv = {
 							MYSID .. ",IntesisID=" .. s,
 							MYSID .. ",IPAddress=" .. getVar( "IPAddress", "", k, DEVICESID )
@@ -1727,7 +1716,7 @@ function plugin_init(dev)
 							"urn:micasaverde-com:serviceId:HomeAutomationGateway1",
 							"CreateDevice",
 							{
-								Description="IntesisBox Gateway",
+								Description=newname,
 								UpnpDevFilename="D_IntesisWMPGateway1.xml",
 								UpnpImplFilename="I_IntesisWMPGateway1.xml",
 								RoomNum=luup.attr_get( "room_num", k ) or 0,
@@ -1740,7 +1729,10 @@ function plugin_init(dev)
 						if newdev then
 							deleteVar( DEVICESID, "IntesisID", k )
 							deleteVar( DEVICESID, "IPAddress", k )
-							setVar( DEVICESID, "newmaster", newdev, k )
+							L("Assigning child %1 (#%2) to new master %3 (#%4)", v.description, k, newname, newdev)
+							setVar( DEVICESID, "DisplayStatus", "Upgrading...", k )
+							luup.attr_set( "id_parent", newdev, k )
+							luup.attr_set( "altid", "1", k )
 							needsReload = true
 						end
 					end
