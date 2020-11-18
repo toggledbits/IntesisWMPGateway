@@ -42,6 +42,8 @@
 	   of the WMP protocol and the gateway's connection to the air handler, which in some cases
 	   may be "arm's length" (e.g. the IS-IR-WMP-1 sends IR commands to the air handler, and can
 	   only assume that the commands are received and obeyed).
+	6) The LIMITS command doesn't seem to support unit IDs, but it seems logical each device
+	   could have different limits. For now, the LIMITS response is applied to all devices.
 
 --]]
 
@@ -52,11 +54,11 @@ local string = require("string")
 local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "3.0develop-20232"
+local _PLUGIN_VERSION = "3.0develop-20323"
 local _PLUGIN_URL = "http://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 20204
 
-local debugMode = true
+local debugMode = false
 -- local traceMode = false
 
 local MYSID = "urn:toggledbits-com:serviceId:IntesisWMPGateway1"
@@ -237,7 +239,7 @@ end
 local function getVar( name, dflt, dev, sid )
 	A( name ~= nil and dev ~= nil and sid ~= nil )
 	local s,t = luup.variable_get( sid, name, dev )
-	if debugMode and s == nil then T({level=2,msg="getVar() of ndefined state variable %1/%2 on #%3"}, sid, name, dev) end
+--	if debugMode and s == nil then T({level=2,msg="getVar() of undefined state variable %1/%2 on #%3"}, sid, name, dev) end
 	if s == nil or s == "" then return dflt,0 end
 	return s,t
 end
@@ -455,7 +457,7 @@ local function pluginReload()
 	luup.reload()
 end
 
-local function deferReload( delay, dev ) 
+local function deferReload( delay, dev )
 	local t = scheduler.getTask( 'reload' )
 	if not t then
 		t = scheduler.Task:new( 'reload', dev, pluginReload, {} )
@@ -466,16 +468,20 @@ end
 -- See if value is within limits (default OK)
 local function inLimit( lim, val, dev )
 	A(dev and luup.devices[dev].device_type == DEVICETYPE)
-	-- ??? Until we straighten out if LIMIT is available per unit, the limits are stored on the parent.
-	local pdev = luup.devices[dev].device_num_parent
-	if type(val) == "number" and devData[pdev].limits[lim].range then
-		if devData[pdev].limits[lim].range.min and val < devData[pdev].limits[lim].range.min then return false end
-		if devData[pdev].limits[lim].range.max and val > devData[pdev].limits[lim].range.max then return false end
+	if type(val) == "number" and devData[dev].limits[lim].range then
+		-- Check range
+		if devData[dev].limits[lim].range.min and val < devData[dev].limits[lim].range.min then
+			return false
+		end
+		if devData[dev].limits[lim].range.max and val > devData[dev].limits[lim].range.max then
+			return false
+		end
 		return true
 	end
-	val = tostring(val)
-	if (devData[pdev].limits or {})[lim] then
-		for _,v in ipairs(devData[pdev].limits[lim].values or {}) do
+	-- Check enumeration
+	if (devData[dev].limits or {})[lim] then
+		val = tostring(val)
+		for _,v in ipairs(devData[dev].limits[lim].values or {}) do
 			if val == v then return true end
 		end
 		return false
@@ -604,10 +610,8 @@ end
 
 -- Set gateway status display. Also echos message to log.
 local function gatewayStatus( msg, dev )
-	msg = msg or ""
 	AP(dev)
-	if msg ~= "" then L(msg) end
-	setVar( MYSID, "DisplayStatus", msg, dev )
+	setVar( MYSID, "DisplayStatus", msg or "", dev )
 end
 
 -- Find WMP device by MAC address
@@ -638,12 +642,21 @@ local function inventoryChildren( parentDev )
 	return children
 end
 
+local function iterateChildren( parentDev )
+	local children = inventoryChildren( parentDev )
+	return function()
+		local n = table.remove( children, 1 )
+		return n, luup.devices[n]
+	end
+end
+
 -- Close socket. This intended to be called using pcall(), so errors do not interrupt
 -- the operation of the plugin. What errors? Anything. Make the effort to close no matter what.
 local function closeSocket( dev )
 	D("closeSocket(%1)", dev)
 	-- Deliberate sequence of events here!
 	gatewayStatus("Disconnected!", dev)
+	W("Disconnected from gateway!")
 	local t = scheduler.getTask( 'receiver' )
 	if t then t:close() end
 	isConnected = false
@@ -768,6 +781,7 @@ local function deviceConnectTCP( dev )
 		-- None of these IPs worked, or, one did... how do we know...
 		D("deviceConnectTCP() didn't find device MAC %1 at any IP", luup.devices[dev].id )
 	end
+	W("Can't connect to gateway!")
 	gatewayStatus( "Not connected!", dev )
 	return false
 end
@@ -954,16 +968,25 @@ local function handleCHN( unit, segs, pdev, target )
 end
 
 -- Handle LIMITS
+--[[ PHR 2020-11-18: As of this writing, we don't know the real semantics of LIMIT
+     when multiple units are controlled by the gateway. It seems logical that it
+     should be on a per-unit basis, because different air handling units can surely
+     have different limits/capabilities, but neither the LIMITS command nor response
+     has a unit number. So, all we can do is apply the given limits everywhere,
+     honoring to the exception for SETPTEMP where each Luup device can display
+     different temperature units (unlikely, but possible). Maybe Intesis will
+     resolve the lingering question/issue here at some point.
+--]]
 function handleLIMITS( unit, segs, pdev, target )
 	D("handleLIMITS(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	if #segs >= 2 then
 		local _,_,obj,lim = string.find( segs[2], "([^,]+),%[(.*)%]" )
 		if obj then
-			devData[target].limits[obj] = { values=split( lim ) or {} }
+			devData[pdev].limits[obj] = { values=split( lim ) or {} }
 			setVar( MYSID, "Limits" .. obj, lim, pdev )
 			local mmin, mmax
-			for _,v in ipairs(devData[target].limits[obj].values) do
+			for _,v in ipairs(devData[pdev].limits[obj].values) do
 				local vn = tonumber(v)
 				if vn then
 					if mmin == nil or vn < mmin then mmin = vn end
@@ -971,27 +994,52 @@ function handleLIMITS( unit, segs, pdev, target )
 				end
 			end
 			if mmin or mmax then
-				devData[target].limits[obj].range = { ['min']=mmin, ['max']=mmax }
+				devData[pdev].limits[obj].range = { ['min']=mmin, ['max']=mmax }
+			end
+			-- Apply to all children as well
+			for cn in iterateChildren( pdev ) do
+				devData[cn].limits[obj] = devData[pdev].limits[obj]
+				setVar( DEVICESID, "Limits" .. obj, lim, cn )
 			end
 		end
 		if obj == "MODE" then
 			-- For mode, we may need to enable or disable certain UI buttons
 			local mm = { COOL=0, HEAT=0, AUTO=0, FAN=0, DRY=0 }
-			for _,v in ipairs( devData[target].limits[obj].values ) do
+			for _,v in ipairs( devData[pdev].limits[obj].values ) do
 				setVar( MYSID, "Mode"..v, 1, pdev )
+				-- Apply to all children
+				for cn in iterateChildren( pdev ) do
+					setVar( DEVICESID, "Mode"..v, 1, cn )
+				end
 				mm[v] = nil
 			end
 			for k in pairs(mm) do
 				setVar( MYSID, "Mode"..k, 0, pdev )
+				for cn in iterateChildren( pdev ) do
+					setVar( DEVICESID, "Mode"..k, 0, cn )
+				end
 			end
 		elseif obj == "SETPTEMP" then
-			local r = devData[target].limits[obj].range or {}
+			local r = devData[pdev].limits[obj].range or {}
 			-- Limits are always degC x 10
 			if r.min then
-				devData[target].sysTemps.minimum = devData[target].sysTemps.unit == "F" and CtoF(r.min / 10) or (r.min / 10)
+				devData[pdev].sysTemps.minimum =
+					devData[pdev].sysTemps.unit == "F" and CtoF(r.min / 10) or (r.min / 10)
 			end
 			if r.max then
-				devData[target].sysTemps.maximum = devData[target].sysTemps.unit == "F" and CtoF(r.max / 10) or (r.max / 10)
+				devData[pdev].sysTemps.maximum =
+					devData[pdev].sysTemps.unit == "F" and CtoF(r.max / 10) or (r.max / 10)
+			end
+			-- Also apply to children
+			for cn in iterateChildren( pdev ) do
+				if r.min then
+					devData[cn].sysTemps.minimum =
+						devData[cn].sysTemps.unit == "F" and CtoF(r.min / 10) or (r.min / 10)
+				end
+				if r.max then
+					devData[cn].sysTemps.maximum =
+						devData[cn].sysTemps.unit == "F" and CtoF(r.max / 10) or (r.max / 10)
+				end
 			end
 		end
 	end
@@ -1159,8 +1207,7 @@ local function updateStatus( pdev )
 	D("updateStatus(%1)", pdev)
 	AP(pdev)
 
-	local children = inventoryChildren( pdev )
-	for _,ch in ipairs( children ) do
+	for ch in iterateChildren( pdev ) do
 		updateDeviceStatus( ch )
 	end
 	if isConnected then
@@ -1206,7 +1253,7 @@ local function handleDiscoveryMessage( msg, parentDev )
 			s = split( s, "," )
 			D("handleDiscoveryMessage() checking #%1 (%2) identified by %3", k, v.description, s[2])
 			if #s >= 2 and parts[2] == s[2] then
-				D("handleDiscoveryMessage() discovery response from %1 (%2), already have it as #%3", parts[2], parts[3], k)
+				L("Discovery: response from %1 (%2), already known device #%3", parts[2], parts[3], k)
 				gatewayStatus( string.format("%s at %s is already known", parts[2], parts[3]), parentDev )
 				return false
 			end
@@ -1248,7 +1295,7 @@ local function handleDiscoveryMessage( msg, parentDev )
 	if newdev then
 		return true
 	end
-	
+
 	gatewayStatus( "Failed to create new device", parentDev )
 	W("Failed to create new master device for %1: %2,%3,%4,%5", parts[2],
 		ra, rb, rc, rd)
@@ -1290,13 +1337,12 @@ function masterTick( task, dev )
 			pcall( closeSocket, dev )
 			updateStatus( dev )
 			task:delay( 1 ) -- reschedule to try to re-open quickly
-		else 
+		else
 			task:schedule( tm )
 		end
 
 		-- See if we're due for any child refreshes
-		local children = inventoryChildren( dev )
-		for _,cn in ipairs( children ) do
+		for cn in iterateChildren( dev ) do
 			if not devData[cn] then
 				D("masterTick() child %1 may not be started yet", cn)
 			elseif now >= ( ( devData[cn].lastRefresh or 0 ) + intRefresh ) then
@@ -1342,8 +1388,6 @@ local function deviceRunOnce( dev, parentDev )
 		luup.attr_set( "subcategory_num", 1, dev )
 	end
 
-	initVar(DEVICESID, "Unit", "-1", dev )
-	initVar(DEVICESID, "Name", "", dev)
 	initVar(DEVICESID, "DisplayTemperature", "--.-", dev)
 	initVar(DEVICESID, "DisplayStatus", "Configuring", dev)
 	initVar(DEVICESID, "IntesisONOFF", "", dev)
@@ -1390,6 +1434,8 @@ local function deviceRunOnce( dev, parentDev )
 		deleteVar(DEVICESID, "Mode"..v, dev)
 	end
 	deleteVar(HADEVICE_SID, "Commands", dev)
+	-- Temporary
+	deleteVar(DEVICESID, "Unit", dev)
 
 	-- No matter what happens above, if our versions don't match, force that here/now.
 	if rev < _CONFIGVERSION then
@@ -1416,7 +1462,10 @@ local function deviceStart( dev, parentDev )
 			D("deviceStart() ALTUI's RegisterPlugin action returned resultCode=%1, resultString=%2, job=%3, returnArguments=%4", rc,rs,jj,ra)
 	end
 
-	setVar( DEVICESID, "DisplayStatus", "", dev )
+	setVar( DEVICESID, "DisplayStatus", "Starting...", dev )
+
+	-- Copy unit number to state variable for static JSON access
+	setVar( DEVICESID, "_ui_u", luup.devices[dev].id, dev )
 
 	--[[ Work out the system units, the user's desired display units, and the configuration units.
 		 The user's desire overrides the system configuration. This is an exception provided in
@@ -1447,7 +1496,9 @@ local function deviceStart( dev, parentDev )
 	luup.variable_watch( "intesisVarChanged", SETPOINT_SID, "CurrentSetpoint", dev )
 	luup.variable_watch( "intesisVarChanged", TEMPSENS_SID, "CurrentTemperature", dev )
 
-	L("Device %1 started!", dev)
+	L("Device %1 (#%2) started for unit %3 on gateway %4", luup.devices[dev].description, dev, 
+		tonumber( luup.devices[dev].id ) or "INVALID", 
+		getVar( "IntesisID", "INVALID", parentDev, MYSID ) )
 	luup.set_failure( 0, dev )
 	return true, "OK", _PLUGIN_NAME
 end
@@ -1455,11 +1506,12 @@ end
 local function discoveryByMAC( mac, dev )
 	D("discoveryByMAC(%1,%2)", mac, dev)
 	AP(dev)
+	L("Discovery: seaerching for MAC %1", mac)
 	gatewayStatus( "Searching for " .. mac, dev )
 	local res = getIPforMAC( mac, dev )
 	if res then
 		local first = res[1]
-		D("discoveryByMAC() found IP %1 for MAC %2", first.ip, first.mac)
+		L("Discovery: found possible %1 for MAC %2", first.ip, first.mac)
 		if passGenericDiscovery( first.mac, first.ip, dev ) then
 			gatewayStatus( "Configuring " .. tostring(first.mac) .. " at " .. tostring(first.ip) )
 			deferReload( 5, dev )
@@ -1467,6 +1519,7 @@ local function discoveryByMAC( mac, dev )
 		end
 		-- Fall through; status message already updated
 	else
+		W("Discovery: can't find device or IP for MAC %1", mac)
 		gatewayStatus( "Device not found with MAC " .. mac, dev )
 	end
 	return false
@@ -1476,6 +1529,7 @@ end
 local function discoveryByIP( ipaddr, dev )
 	D("discoveryByIP(%1,%2)", ipaddr, dev)
 	AP(dev)
+	L("Discovery: trying IP %1", ipaddr)
 	gatewayStatus( "Searching for " .. ipaddr, dev )
 	local res = getMACforIP( ipaddr, dev )
 	if res == nil then
@@ -1490,13 +1544,13 @@ local function discoveryByIP( ipaddr, dev )
 			L("IP discovery was unable to determine MAC address, but device is connectible. Proceeding with empty MAC.")
 			res = { [1] = { mac = "000000000000", ip = ipaddr } }
 		else
-			D("discoveryByIP() failed to connect to %1, %2", ipaddr, err)
+			L("Discovery: failed to connect to %1, %2", ipaddr, err)
 			gatewayStatus( "Device not found at IP " .. ipaddr , dev )
 			return false
 		end
 	end
 	local first = res[1]
-	D("discoveryByIP() found MAC %1 for IP %2", first.mac, first.ip)
+	D("Discovery: found MAC %1 for IP %2", first.mac, first.ip)
 	if passGenericDiscovery( first.mac, first.ip, dev ) then
 		gatewayStatus( "Configuring " .. tostring(first.mac) .. " at " .. tostring(first.ip) )
 		deferReload( 5, dev )
@@ -1538,9 +1592,11 @@ function discoveryTick( task, dev, expiration )
 	task:close()
 	D("discoveryTick() end of discovery")
 	if discoveryReload then
+		L("Discovery: new devices; arming to reload Luup")
 		gatewayStatus( "Configuring new devices; reloading Luup", dev )
 		deferReload( 5, dev )
 	end
+	L("Discovery ended with no new gateways found.")
 	gatewayStatus( "Nothing new discovered.", dev )
 end
 
@@ -1557,6 +1613,7 @@ local function launchDiscovery( dev )
 
 	discoveryReload = false
 
+	L("Discovery: starting UDP broadcast discovery")
 	gatewayStatus( "Discovery running...", dev )
 
 	local broadcast = getSystemIP4BCast( dev )
@@ -1635,7 +1692,8 @@ end
 -- Start-up initialization for plug-in.
 function plugin_init(dev)
 	D("plugin_init(%1)", dev)
-	L("starting version %1 for device %2 gateway", _PLUGIN_VERSION, dev )
+	L("starting version %1 for gateway %2", _PLUGIN_VERSION,
+		getVar( "IntesisID", "(not configured)", dev, MYSID ) )
 
 	-- Up front inits
 	pluginDevice = dev
@@ -1702,9 +1760,9 @@ function plugin_init(dev)
 						deleteVar( DEVICESID, "IntesisID", k )
 						deleteVar( DEVICESID, "IPAddress", k )
 						needsReload = true
-					else 
+					else
 						-- There's already an ID/IP assigned on this parent.
-						-- Make a new master device for this ID/IP. The startup for the 
+						-- Make a new master device for this ID/IP. The startup for the
 						-- new master will take care of adding a default child/unit.]
 						D("plugin_init() creating new master for %1", s)
 						local m = split( s, "," ) or {}
@@ -1765,7 +1823,7 @@ function plugin_init(dev)
 		setVar( MYSID, "IPAddress", devIP, dev )
 	else
 		gatewayStatus( "Please run discovery", dev )
-		L("Device IP could not be established for %1(%2) ID=%3",
+		L("Device IP could not be established for %1(%2) ID=%3; please run discovery.",
 			dev, luup.devices[dev].description, ident)
 		luup.set_failure( 0, dev )
 		return true, "Please run discovery.", _PLUGIN_NAME
@@ -1797,8 +1855,8 @@ function plugin_init(dev)
 		return false, "Reconfiguring...", _PLUGIN_NAME
 	end
 	for _,cn in ipairs( children ) do
-		L("Starting device %1 (%2)", cn, luup.devices[cn].description)
 		local unit = tonumber( luup.devices[cn].id ) or -1
+		L("Starting %2 (#%1) unit %3", cn, luup.devices[cn].description, unit)
 		if unit < 0 then
 			luup.set_failure( cn, true );
 			setVar( DEVICESID, "Failure", 1, cn )
@@ -2010,22 +2068,22 @@ function actionSetUnitID( dev, unitid )
 		return true
 	end
 	local pdev = luup.devices[dev].device_num_parent
-	local children = inventoryChildren( pdev )
-	for _,cn in ipairs( children ) do
-		if tostring(luup.devices[cn].id) == unitid then
-			E("Action failed: unit %3 already in use by %1 (#%2)", luup.devices[cn].description,
-				cn, unitid)
+	for cn,d in iterateChildren( pdev ) do
+		if tostring(d.id) == unitid then
+			E("Action failed: unit %3 already in use by %1 (#%2)", d.description, cn, unitid)
 			return false
 		end
 	end
 	luup.attr_set( "altid", unitid, dev )
+	setVar( DEVICESID, "_ui_u", unitid, dev )
 	if luup.devices[dev].description:match( "^Unit %d+$" ) then
 		luup.attr_set( "name", "Unit " .. unitid, dev )
 	end
 	L("Action succeeded: unit id set for %1 (#%2) to %3; reloading Luup...",
 		luup.devices[dev].description, dev, unitid)
+	setVar( DEVICESID, "DisplayStatus", "Wait; changing unit ID to "..unitid, dev )
 	gatewayStatus( "Reloading for unit ID change", pdev )
-	deferReload( 2, pdev )
+	deferReload( 5, pdev )
 	return true
 end
 
@@ -2037,23 +2095,33 @@ function actionSetName( dev, newName )
 	return sendCommand( "ID", dev )
 end
 
-function actionAddUnit( dev )
-	AP(dev)
-	L("Adding new unit")
-	local children = inventoryChildren( dev )
+-- Delayed implementation of add unit action so UI can display status
+-- (slow refresh requires a couple of seconds, and if the reload comes
+-- too fast, the UI never updates the display and the user is left wondering
+-- what's going on.
+function delayAddUnit( task, dev )
 	local ptr = luup.chdev.start( dev )
 	local maxu = 0
-	for _,cn in ipairs( children ) do
-		local d = luup.devices[cn]
+	for cn,d in iterateChildren( dev ) do
 		local n = tonumber( d.id )
 		if n and n > maxu then maxu = n end
-		luup.chdev.append( dev, ptr, d.id, d.description, d.device_type,
-			"", "", "", false )
+		D("actionAddUnit() appending %1 (#%2) unit %3 as existing device", d.description,
+			cn, n)
+		luup.chdev.append( dev, ptr, d.id, d.description, d.device_type, "", "", "", false )
 	end
 	maxu = maxu + 1
-	luup.chdev.append( dev, ptr, maxu, "Unit "..maxu, "", 
-		"D_IntesisWMPDevice1.xml", "", "", false )
+	luup.chdev.append( dev, ptr, maxu, "Unit "..maxu, "", "D_IntesisWMPDevice1.xml", "", "", false )
+	W("New unit %1 added; Luup reload coming next...", maxu)
 	luup.chdev.sync( dev, ptr )
+	task:close()
+end
+
+function actionAddUnit( dev )
+	AP(dev)
+	scheduler.Task:new( 'addunit', dev, delayAddUnit, { dev } ):delay( 5 )
+	L("Adding new unit")
+	gatewayStatus( "Adding new unit and reloading Luup...", dev )
+	return true
 end
 
 function actionRunDiscovery( dev )
@@ -2269,11 +2337,10 @@ function plugin_requestHandler(lul_request, lul_parameters, lul_outputformat)
 		}
 		for k,v in pairs( luup.devices ) do
 			if v.device_type == MYTYPE then
-				local gwinfo = getDevice( k, luup.device, v ) or {}
-				local children = inventoryChildren( k )
+				local gwinfo = getDevice( k, k, v ) or {}
 				gwinfo.children = {}
-				for _,cn in ipairs( children ) do
-					table.insert( gwinfo.children, getDevice( cn, luup.device ) )
+				for cn,cd in iterateChildren( k ) do
+					table.insert( gwinfo.children, getDevice( cn, k, cd ) )
 				end
 				table.insert( st.devices, gwinfo )
 			end

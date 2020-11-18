@@ -189,7 +189,7 @@
 					},
 					"Display": {
 						"Top": 30,
-						"Left": 150,
+						"Left": 130,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -217,7 +217,7 @@
 					},
 					"Display": {
 						"Top": 60,
-						"Left": 150,
+						"Left": 130,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -249,7 +249,7 @@
 					},
 					"Display": {
 						"Top": 30,
-						"Left": 250,
+						"Left": 210,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -277,7 +277,7 @@
 					},
 					"Display": {
 						"Top": 60,
-						"Left": 250,
+						"Left": 210,
 						"Width": 75,
 						"Height": 20,
 						"Service": "urn:upnp-org:serviceId:HVAC_UserOperatingMode1",
@@ -432,6 +432,24 @@
 					},
 					"ControlCode": "thermostat_fan_up"
 				},
+
+
+				{
+					"ControlType": "label",
+					"top": "0.1",
+					"left": 0,
+					"text_align": "left",
+					"Label": {
+						"lang_tag": "wmp_txt_currtemp",
+						"text": "Current Temperature:"
+					},
+					"Display": {
+						"Top": 170,
+						"Left": 30,
+						"Width": 130,
+						"Height": 25
+					}
+				},
 				{
 					"ControlGroup": 4,
 					"ControlType": "variable",
@@ -442,8 +460,8 @@
 						"text": "&deg;_TEMPERATURE_FORMAT_"
 					},
 					"Display": {
-						"Top": 180,
-						"Left": 30,
+						"Top": 170,
+						"Left": 160,
 						"Width": 100,
 						"Height": 25,
 						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
@@ -483,8 +501,8 @@
 						"text": "Vanes"
 					},
 					"Display": {
-						"Top": 90,
-						"Left": 250,
+						"Top": 75,
+						"Left": 320,
 						"Width": 130,
 						"Height": 25
 					}
@@ -498,8 +516,8 @@
 						"text": "&uarr;"
 					},
 					"Display": {
-						"Top": 120,
-						"Left": 295,
+						"Top": 75,
+						"Left": 370,
 						"Width": 40,
 						"Height": 20
 					},
@@ -519,8 +537,8 @@
 						"text": "&larr;"
 					},
 					"Display": {
-						"Top": 150,
-						"Left": 270,
+						"Top": 105,
+						"Left": 345,
 						"Width": 40,
 						"Height": 20
 					},
@@ -540,8 +558,8 @@
 						"text": "&rarr;"
 					},
 					"Display": {
-						"Top": 150,
-						"Left": 320,
+						"Top": 105,
+						"Left": 395,
 						"Width": 40,
 						"Height": 20
 					},
@@ -561,8 +579,8 @@
 						"text": "&darr;"
 					},
 					"Display": {
-						"Top": 180,
-						"Left": 295,
+						"Top": 135,
+						"Left": 370,
 						"Width": 40,
 						"Height": 20
 					},
@@ -582,8 +600,8 @@
 						"text": "&uarr;Auto&darr;"
 					},
 					"Display": {
-						"Top": 210,
-						"Left": 250,
+						"Top": 165,
+						"Left": 325,
 						"Width": 60,
 						"Height": 20,
 						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
@@ -595,7 +613,7 @@
 						"Action": "SetUpDownVanePosition",
 						"Parameters": [{
 							"Name": "NewPosition",
-							"Value": 0
+							"Value": "0"
 						}]
 					},
 					"ControlCode": "thermostat_vanes_autoupdown"
@@ -609,8 +627,8 @@
 						"text": "&larr;Auto&rarr;"
 					},
 					"Display": {
-						"Top": 210,
-						"Left": 320,
+						"Top": 165,
+						"Left": 395,
 						"Width": 60,
 						"Height": 20,
 						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
@@ -622,7 +640,7 @@
 						"Action": "SetLeftRightVanePosition",
 						"Parameters": [{
 							"Name": "NewPosition",
-							"Value": 0
+							"Value": "0"
 						}]
 					},
 					"ControlCode": "thermostat_vanes_autoleftright"
@@ -631,14 +649,67 @@
 				{
 					"ControlType": "label",
 					"top": "0.2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "wmp_setunit_sep",
+						"text": "<hr/>If you control multiple units, you can set the unit number for this device here. See your IntesisBox documentation for more information before changing this value."
+					},
+					"Display": {
+						"Top": 190,
+						"Left": 0,
+						"Width": 630,
+						"Height": 48
+					}
+				},
+				{
+					"ControlType": "input",
+					"ID": "newunit",
+					"Display": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Variable": "_ui_u",
+						"Top": 275,
+						"Left": 30,
+						"Width": 40,
+						"Height": 24
+					}
+				},
+				{
+					"ControlType": "button",
+					"top": "2",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_wmp_dosetunit",
+						"text": "Set Unit ID"
+					},
+					"Display": {
+						"Top": 275,
+						"Left": 80,
+						"Width": 120,
+						"Height": 25
+					},
+					"Command": {
+						"Service": "urn:toggledbits-com:serviceId:IntesisWMPDevice1",
+						"Action": "SetUnitID",
+						"Parameters": [{
+							"Name": "NewUnitID",
+							"ID": "newunit"
+						}]
+					},
+					"ControlCode": "wmp_setunitbtn"
+				},
+
+
+				{
+					"ControlType": "label",
+					"top": "0.2",
 					"left": 0,
 					"Label": {
 						"lang_tag": "wmp_about",
-						"text": "Intesis WMP Gateway plug-in v3.0 &copy; 2017,2018,2020 Patrick H. Rigney, All Rights Reserved.<br/><a href='http://www.toggledbits.com/intesis/'>http://www.toggledbits.com/intesis/</a>"
+						"text": "<hr/>Intesis WMP Gateway plug-in v3.0 &copy; 2017,2018,2020 Patrick H. Rigney, All Rights Reserved. Template C<br/>For support, please post in <a href='https://community.getvera.com/t/plugin-intesis-wmp-gateway/198506' target='_blank'>the Intesis Plugin topic in the Vera Community Forums</a>. If you find this plug-in useful, please consider <a href='https://www.toggledbits.com/donate' target='_blank'>making a small donation to its independent developer</a>."
 					},
 					"Display": {
-						"Top": 270,
-						"Left": 30,
+						"Top": 300,
+						"Left": 0,
 						"Width": 300,
 						"Height": 25
 					}

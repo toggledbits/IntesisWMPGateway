@@ -265,7 +265,7 @@
 					"left": "0",
 					"Label": {
 						"lang_tag": "wmp_ex_addunit",
-						"text": "If you have additional units controlled by this gateway, click \"Add Unit\" to create a new device for each additional unit."
+						"text": "If you have additional units controlled by this gateway, click \"Add Unit\" to create a new device for each additional unit. After this process completes, go into the new device's control panel and set the unit number as needed."
 					},
 					"Display": {
 						"Top": 320,
@@ -282,10 +282,10 @@
 					"left": "0",
 					"Label": {
 						"lang_tag": "wmp_gw_about",
-						"text": "Intesis WMP Gateway Plugin ver 3.0 &#169; 2017,2020 Patrick H. Rigney, All Rights Reserved. Docs and license at <a href=\"http://www.toggledbits.com/intesis\" target=\"_blank\">https://www.toggledbits.com/intesis</a>. Please consider <a href=\"https://www.toggledbits.com/donate\" target=\"_blank\">making a small donation</a> for ongoing support of this project."
+						"text": "<hr/>Intesis WMP Gateway plug-in v3.0 &copy; 2017,2018,2020 Patrick H. Rigney, All Rights Reserved.<br/>For support, please post in <a href='https://community.getvera.com/t/plugin-intesis-wmp-gateway/198506' target='_blank'>the Intesis Plugin topic in the Vera Community Forums</a>. If you find this plug-in useful, please consider <a href='https://www.toggledbits.com/donate' target='_blank'>making a small donation to its independent developer</a>."
 					},
 					"Display": {
-						"Top": 360,
+						"Top": 370,
 						"Left": 0,
 						"Width": 630,
 						"Height": 96
