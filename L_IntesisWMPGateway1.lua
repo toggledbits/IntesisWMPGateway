@@ -1694,7 +1694,7 @@ function plugin_init(dev)
 					local newdev = tonumber(s)
 					L("Adopting upgraded device %1 for %2", k, newdev)
 					if newdev and (luup.devices[newdev] or {}).device_type == MYTYPE then
-						luup.attr_set( "device_num_parent", newdev, k )
+						luup.attr_set( "id_parent", newdev, k )
 						deleteVar( DEVICESID, "newmaster", k )
 						luup.attr_set( "altid", "1", k )
 						needsReload = true
@@ -1712,6 +1712,8 @@ function plugin_init(dev)
 						setVar( MYSID, "IntesisID", s, dev )
 						setVar( MYSID, "IPAddress", getVar( "IPAddress", "", k, DEVICESID ), dev )
 						luup.attr_set( "altid", 1, k )
+						deleteVar( DEVICESID, "IntesisID", k )
+						deleteVar( DEVICESID, "IPAddress", k )
 					else 
 						-- There's already an ID/IP assigned on this parent.
 						-- Make a new master device for this ID/IP. The startup for the 
@@ -1719,8 +1721,7 @@ function plugin_init(dev)
 						D("plugin_init() creating new master for %1", s)
 						local vv = {
 							MYSID .. ",IntesisID=" .. s,
-							MYSID .. ",IPAddress=" .. getVar( "IPAddress", "", k, DEVICESID ),
-							DEVICESID .. ",newmaster=" .. newdev
+							MYSID .. ",IPAddress=" .. getVar( "IPAddress", "", k, DEVICESID )
 						}
 						local ra,rb,rc,rd = luup.call_action(
 							"urn:micasaverde-com:serviceId:HomeAutomationGateway1",
@@ -1737,15 +1738,14 @@ function plugin_init(dev)
 						local newdev = tonumber( rd.DeviceNum )
 						D("plugin_init() new master is %1", newdev)
 						if newdev then
+							deleteVar( DEVICESID, "IntesisID", k )
+							deleteVar( DEVICESID, "IPAddress", k )
+							setVar( DEVICESID, "newmaster", newdev, k )
 							needsReload = true
 						end
 					end
-					D("plugin_init() clearing child %1 identity data", k)
-					deleteVar( DEVICESID, "IntesisID", k )
-					deleteVar( DEVICESID, "IPAddress", k )
 				else
-					D("plugin_init() child %1 (#%2) is already converted", 
-						v.description, k)
+					D("plugin_init() child %1 (#%2) is already converted", v.description, k)
 				end
 			end
 		end
