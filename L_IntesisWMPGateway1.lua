@@ -669,6 +669,9 @@ local function configureSocket( sock, dev )
 	lastSendTime = os.time()
 	lastIncoming = os.time()
 	lastCommand = ""
+	intPing = getVarNumeric( "PingInterval", usingProxy and 90 or DEFAULT_PING, dev, DEVICESID )
+	if intPing > 100 then intPing = 100 end -- gateway disconnects after two minutes, so limit
+	intRefresh = getVarNumeric( "RefreshInterval", usingProxy and 300 or DEFAULT_REFRESH, dev, DEVICESID )
 	local t = scheduler.getTask( 'receiver' ) or
 		scheduler.Task:new( 'receiver', dev, deviceReceiveTask, { dev } )
 	t:delay( 1 )
@@ -695,8 +698,6 @@ local function _conn( dev, ip, port )
 				if ans and ans:match("^OK CONN") then
 					D("_conn() connected using proxy")
 					usingProxy = true
-					intPing = 300
-					intRefresh = 3 * intPing
 					return true, sock
 				end
 			end
@@ -717,8 +718,6 @@ local function _conn( dev, ip, port )
 			L({level=2,msg="%1 (#%2) connected without SockProxy; may be down or not installed. See https://github.com/toggledbits/sockproxyd"},
 				(luup.devices[dev] or {}).description, dev)
 		end
-		intPing = getVarNumeric( "PingInterval", DEFAULT_PING, dev, DEVICESID )
-		intRefresh = getVarNumeric( "RefreshInterval", DEFAULT_REFRESH, dev, DEVICESID )
 		return true, sock
 	end
 	sock:close()
@@ -818,10 +817,10 @@ local function handleID( unit, segs, pdev, target )
 	D("handleID(%1,%2,%3,%4)", unit, segs, pdev, target)
 	AP( pdev )
 	local args
-	setVar( DEVICESID, "IntesisID", segs[2], pdev ) -- aka MAC
+	setVar( MYSID, "IntesisID", segs[2], pdev ) -- aka MAC
 	args = split( segs[2], "," )
-	setVar( DEVICESID, "Name", args[7] or "", pdev )
-	setVar( DEVICESID, "SignalDB", args[6] or "", pdev )
+	setVar( MYSID, "Name", args[7] or "", pdev )
+	setVar( MYSID, "SignalDB", args[6] or "", pdev )
 	luup.attr_set( "manufacturer", "Intesis", pdev )
 	luup.attr_set( "model", args[1] or "", pdev )
 end
@@ -1308,8 +1307,11 @@ function masterTick( task, dev )
 		end
 
 		-- Send queued commands
-		if #infocmd == 0 and now >= ( lastSendTime + intPing ) then
+		tm = lastSendTime + intPing
+		if #infocmd == 0 and now >= tm then
 			table.insert( infocmd, "PING" )
+		else
+			task:schedule( tm )
 		end
 		if #infocmd > 0 then
 			local cmd = table.remove( infocmd, 1 )
@@ -1691,8 +1693,7 @@ function plugin_init(dev)
 				local s = getVar( "IntesisID", "", k, DEVICESID )
 				if s ~= "" then
 					-- Pre-3.0 child has not been handled yet. Parent already have a child?
---- ??? FIX ME -- if false
-					if false and getVar( "IntesisID", "", dev, DEVICESID ) == "" then
+					if getVar( "IntesisID", "", dev, DEVICESID ) == "" then
 						-- No gateway ID assigned to this parent yet. Move it up from child.
 						D("plugin_init() assigning child's IntesisID to parent")
 						setVar( MYSID, "IntesisID", s, dev )
@@ -1706,7 +1707,7 @@ function plugin_init(dev)
 						-- Make a new master device for this ID/IP. The startup for the 
 						-- new master will take care of adding a default child/unit.]
 						D("plugin_init() creating new master for %1", s)
-						local m = split( s, "," )
+						local m = split( s, "," ) or {}
 						local newname = "IntesisBox " .. (m[2] or "Gateway")
 						local vv = {
 							MYSID .. ",IntesisID=" .. s,
@@ -1725,7 +1726,7 @@ function plugin_init(dev)
 							0
 						)
 						local newdev = tonumber( rd.DeviceNum )
-						D("plugin_init() new master is %1", newdev)
+						D("plugin_init() new master is %1, assigning %2", newdev, k)
 						if newdev then
 							deleteVar( DEVICESID, "IntesisID", k )
 							deleteVar( DEVICESID, "IPAddress", k )
@@ -1763,6 +1764,7 @@ function plugin_init(dev)
 		D("plugin_init() updating device IP to %1", devIP)
 		setVar( MYSID, "IPAddress", devIP, dev )
 	else
+		gatewayStatus( "Please run discovery", dev )
 		L("Device IP could not be established for %1(%2) ID=%3",
 			dev, luup.devices[dev].description, ident)
 		luup.set_failure( 0, dev )
@@ -1771,7 +1773,6 @@ function plugin_init(dev)
 	luup.attr_set( "ip", "", dev )
 	luup.attr_set( "mac", "", dev )
 
-	-- Open connection?
 	-- Launch the master tick.
 	scheduler.Task:new( 'master', dev, masterTick, { dev } ):delay( 15 )
 
@@ -1793,7 +1794,7 @@ function plugin_init(dev)
 			false -- embedded
 		)
 		luup.chdev.sync( dev, ptr )
-		return false, "Reloading Luup", _PLUGIN_NAME
+		return false, "Reconfiguring...", _PLUGIN_NAME
 	end
 	for _,cn in ipairs( children ) do
 		L("Starting device %1 (%2)", cn, luup.devices[cn].description)
