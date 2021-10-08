@@ -4,7 +4,10 @@
 -- http://www.toggledbits.com/intesis/
 -- This file is available under GPL 3.0. See LICENSE in documentation for info.
 -- -----------------------------------------------------------------------------
-
+--[[  TO-DO:
+	* Set correct static JSON at child creation, to save one or more reloads.
+	* Support/status request links somewhere.
+--]]
 --[[
 	Overview
 	--------------------------------------------------------------------------------------------
@@ -54,7 +57,7 @@ local string = require("string")
 local socket = require("socket")
 
 local _PLUGIN_NAME = "IntesisWMPGateway"
-local _PLUGIN_VERSION = "3.0develop-20323"
+local _PLUGIN_VERSION = "3.0develop-21281"
 local _PLUGIN_URL = "https://www.toggledbits.com/intesis"
 local _CONFIGVERSION = 20204
 
@@ -1194,6 +1197,7 @@ end
 local lastDelay = 1
 
 deviceReceiveTask = function( task, dev )
+	D("deviceReceiveTask(<%1>,%2)", task.id, dev)
 	if deviceReceive( dev ) then
 		-- Data received; reshorten turnaround
 		lastDelay = 1
@@ -1201,7 +1205,13 @@ deviceReceiveTask = function( task, dev )
 		-- No data received; slowly extend delay
 		lastDelay = math.min( lastDelay*2, 16 )
 	end
-	task:delay( usingProxy and 120 or lastDelay )
+	-- deviceReceive() can close the socket (disconnect, error), so check 
+	-- that we're still connected before rescheduling.
+	if isConnected then
+		task:delay( usingProxy and 120 or lastDelay )
+	else	
+		D("deviceReceiveTask() not rescheduling; disconnected")
+	end
 end
 
 -- Update the display status. We don't really bother with this at the moment because the WMP
@@ -1903,16 +1913,16 @@ function plugin_init(dev)
 		local unit = tonumber( luup.devices[cn].id ) or -1
 		L("Starting %2 (#%1) unit %3", cn, luup.devices[cn].description, unit)
 		if unit < 0 then
-			luup.set_failure( cn, true );
+			luup.set_failure( 1, cn );
 			setVar( DEVICESID, "Failure", 1, cn )
 			setVar( DEVICESID, "DisplayStatus", "Unit number is not assigned", cn )
 		elseif devData[dev].units[tostring(unit)] then
-			luup.set_failure( cn, true );
+			luup.set_failure( 1, cn );
 			setVar( DEVICESID, "Failure", 1, cn )
 			setVar( DEVICESID, "DisplayStatus", "Duplicate unit ID!", cn )
 		else
 			devData[dev].units[tostring(unit)] = cn
-			luup.set_failure( cn, false );
+			luup.set_failure( 0, cn );
 			setVar( DEVICESID, "Failure", 0, cn ) -- IUPG
 			local ok, err = pcall( deviceStart, cn, dev )
 			if not ok then
